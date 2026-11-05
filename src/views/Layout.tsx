@@ -12,6 +12,7 @@ const PATHS: Record<string, string> = {
   plus: "M12 5v14M5 12h14",
   more: "M5 12h.01M12 12h.01M19 12h.01",
   chevron: "M9 6l6 6-6 6",
+  close: "M6 6l12 12M18 6L6 18",
 };
 
 export const Icon: FC<{ name: keyof typeof PATHS }> = ({ name }) => (
@@ -42,7 +43,10 @@ export const MenuBtn: FC<{ kind: "feed" | "folder"; id?: number; name: string; f
 const FeedRow: FC<{ f: Sub; activeId?: number }> = ({ f, activeId }) => (
   <div class={`row${activeId === f.id ? " active" : ""}`}>
     <a href={`/feed/${f.id}?v=all`} title={f.last_error ? `Error: ${f.last_error}` : f.url}>
-      <span class="avatar">{f.name.charAt(0).toUpperCase()}</span>
+      <span class="avatar">
+        {f.name.charAt(0).toUpperCase()}
+        {f.favicon_url ? <img class="favicon" src={f.favicon_url} alt="" loading="lazy" /> : null}
+      </span>
       <span class="name">{f.name}</span>
       {f.last_error ? <span class="warn" title={f.last_error}>!</span> : null}
       <span class="count" data-feed-count={f.id}>{f.unread || ""}</span>
@@ -84,9 +88,9 @@ export const Layout: FC<Props> = ({ user, admin, subs, starred, view, feedId, fo
           </header>
 
           <aside class="sidebar" id="sidebar">
-            <a href="/" class="brand"><h1><span class="prompt">$</span> echo "reader"<span class="cursor">_</span></h1></a>
+            <a href="/" class="brand"><span class="prompt">$</span> echo "reader"<span class="cursor">_</span></a>
             <form class="add" method="post" action="/feeds" data-busy="Buscando…">
-              <input type="text" name="url" placeholder="URL de la fuente" required autocomplete="off" aria-label="Dirección del feed" />
+              <input type="text" name="url" placeholder="Agregar fuente: pega una URL" required autocomplete="off" aria-label="Dirección del feed" />
               <button type="submit" aria-label="Agregar"><Icon name="plus" /></button>
             </form>
 
@@ -143,6 +147,22 @@ export const Layout: FC<Props> = ({ user, admin, subs, starred, view, feedId, fo
             {err ? <div class="flash err" role="alert">{err}</div> : null}
             {children}
           </main>
+
+          <dialog id="preview" class="drawer" aria-labelledby="preview-title">
+            <div class="drawer-head">
+              <button class="icon-btn" id="preview-close" type="button" aria-label="Cerrar"><Icon name="close" /></button>
+            </div>
+            <div class="drawer-body">
+              <p class="drawer-meta"><span id="preview-source"></span> · <span id="preview-when"></span></p>
+              <h2 id="preview-title"></h2>
+              <p id="preview-summary"></p>
+            </div>
+            <div class="drawer-actions">
+              <a class="btn primary" id="preview-link" target="_blank" rel="noopener noreferrer">Leer artículo completo</a>
+              <button class="btn" id="preview-star" type="button"></button>
+              <button class="btn" id="preview-read" type="button"></button>
+            </div>
+          </dialog>
 
           <dialog id="dlg">
             <form method="dialog">

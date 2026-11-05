@@ -1,4 +1,4 @@
-import { findFeedLinks, parseFeed, type ParsedFeed } from "./parse";
+import { findFavicon, findFeedLinks, parseFeed, type ParsedFeed } from "./parse";
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const COMMON_PATHS = ["/feed", "/rss.xml", "/atom.xml", "/feed.xml", "/index.xml", "/rss"];
@@ -49,6 +49,19 @@ export async function fetchText(
     lastModified: res.headers.get("last-modified") ?? "",
     finalUrl: res.url || url,
   };
+}
+
+/** Busca el icono del sitio; siempre devuelve una sola URL HTTPS. Si no declara ninguno, usa /favicon.ico. */
+export async function resolveFavicon(siteUrl: string): Promise<string> {
+  const https = (u: string) => u.replace(/^http:/i, "https:");
+  const fallback = https(new URL("/favicon.ico", siteUrl).href);
+  try {
+    const r = await fetchText(siteUrl);
+    const found = r.status === "ok" ? findFavicon(r.body, r.finalUrl) : "";
+    return found ? https(found) : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 export function normalizeUrl(input: string): string | null {

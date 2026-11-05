@@ -15,7 +15,7 @@ import {
 } from "./db";
 import { discoverFeed } from "./fetch";
 import { buildOpml, parseOpml } from "./opml";
-import { refreshDue } from "./refresh";
+import { backfillFavicons, refreshDue } from "./refresh";
 import { AdminPage } from "./views/Admin";
 import { AuthPage } from "./views/Auth";
 import { Layout } from "./views/Layout";
@@ -59,7 +59,7 @@ app.use(
       defaultSrc: ["'none'"],
       scriptSrc: ["'self'"],
       styleSrc: ["'self'"],
-      imgSrc: ["'self'"],
+      imgSrc: ["'self'", "https:"], // favicons de cada fuente
       connectSrc: ["'self'"],
       formAction: ["'self'"],
       frameAncestors: ["'none'"],
@@ -196,7 +196,7 @@ async function renderTimeline(c: any, scope: { feedId?: number; folder?: string 
   const heading = feed ? feed.name : scope.folder !== undefined ? scope.folder : view === "unread" ? "Sin leer" : view === "starred" ? "Guardados" : "Todo";
   return c.html(
     <Layout user={user} admin={isAdmin(user.email, c.env)} subs={subs} starred={starred} view={view} feedId={scope.feedId} folder={scope.folder} title={heading} msg={c.req.query("msg")} err={c.req.query("err")}>
-      <Timeline username={user.email.split("@")[0]} view={view} feed={feed} folder={scope.folder} hasFeeds={subs.length > 0} entries={page.entries} next={page.next} base={base} />
+      <Timeline view={view} heading={heading} feed={feed} folder={scope.folder} hasFeeds={subs.length > 0} entries={page.entries} next={page.next} base={base} />
     </Layout>,
   );
 }
@@ -217,7 +217,10 @@ app.post("/feeds", async (c) => {
     const found = await discoverFeed(String(body.url ?? ""));
     const { id, existed, isNewFeed } = await subscribe(c.env.DB, user.id, found);
     if (existed) return c.redirect(`/feed/${id}?v=all&msg=${enc("Ya sigues esta fuente")}`);
-    if (isNewFeed) await saveEntries(c.env.DB, id, found.parsed.entries);
+    if (isNewFeed) {
+      await saveEntries(c.env.DB, id, found.parsed.entries);
+      c.executionCtx.waitUntil(backfillFavicons(c.env.DB, 1, user.id));
+    }
     const name = found.parsed.title || new URL(found.feedUrl).hostname;
     return c.redirect(`/feed/${id}?v=all&msg=${enc(`Agregado: ${name}`)}`);
   } catch (e) {

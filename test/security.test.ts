@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchText } from "../src/fetch";
+import { fetchText, resolveFavicon } from "../src/fetch";
 import worker from "../src/index";
 
 /** D1 mínima: solo lo que usan el limitador de intentos y el estado del registro. */
@@ -117,5 +117,23 @@ describe("tamaño de las respuestas", () => {
     const bytes = new TextEncoder().encode("añ");
     serve([bytes.slice(0, 2), bytes.slice(2)]);
     expect(await fetchText("https://x.example/feed")).toMatchObject({ status: "ok", body: "añ" });
+  });
+});
+
+describe("resolveFavicon", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const page = (html: string, status = 200) => vi.stubGlobal("fetch", async () => new Response(html, { status }));
+
+  it("usa el icono declarado y lo pasa a HTTPS", async () => {
+    page(`<link rel="icon" href="http://cdn.test/i.png">`);
+    expect(await resolveFavicon("https://a.test/")).toBe("https://cdn.test/i.png");
+  });
+  it("sin icono declarado usa /favicon.ico en HTTPS", async () => {
+    page("<html></html>");
+    expect(await resolveFavicon("http://a.test/blog/")).toBe("https://a.test/favicon.ico");
+  });
+  it("si el sitio falla también usa /favicon.ico", async () => {
+    page("error", 500);
+    expect(await resolveFavicon("https://a.test/x")).toBe("https://a.test/favicon.ico");
   });
 });

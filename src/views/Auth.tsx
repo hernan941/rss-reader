@@ -15,7 +15,6 @@ interface Props {
 
 export const AuthPage: FC<Props> = ({ mode, err, email, needInvite, closed, canRegister = true }) => {
   const login = mode === "login";
-  const win = login ? "login" : "registro";
   return (
     <>
       {raw("<!DOCTYPE html>")}
@@ -25,7 +24,6 @@ export const AuthPage: FC<Props> = ({ mode, err, email, needInvite, closed, canR
           <main class="auth">
             <a href="/login" class="brand"><h1><span class="prompt">$</span> echo "reader"<span class="cursor">_</span></h1></a>
             <div class="term">
-              <div class="term-bar"><span></span><span></span><span></span><em>reader: ~/{win}</em></div>
               <div class="term-body">
             <p class="lead">{login ? "Entra para ver tus fuentes." : closed ? "El registro no está disponible." : "Crea una cuenta para guardar tus fuentes."}</p>
             {err ? <div class="flash err" role="alert">{err}</div> : null}
@@ -55,9 +53,7 @@ export const AuthPage: FC<Props> = ({ mode, err, email, needInvite, closed, canR
               {login ? (canRegister ? <>¿No tienes cuenta? <a href="/register">Regístrate</a></> : null) : <>¿Ya tienes cuenta? <a href="/login">Entra</a></>}
             </p>
               </div>
-              <div class="tmux"><span>[reader] <span class="win-active">0:{win}*</span></span><span>"lector rss"</span></div>
             </div>
-            <p class="auth-foot"><a href="https://hernan941.com/">← hernan941.com</a></p>
           </main>
         </body>
       </html>

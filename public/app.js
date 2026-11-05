@@ -7,6 +7,12 @@
   $("#menu")?.addEventListener("click", () => body.classList.toggle("menu-open"));
   $("#scrim")?.addEventListener("click", () => body.classList.remove("menu-open"));
 
+  // ---------- Favicons: si uno no carga, queda la inicial de la fuente ----------
+  document.addEventListener("error", (e) => {
+    if (e.target.matches?.("img.favicon")) e.target.remove();
+  }, true);
+  $$("img.favicon").forEach((img) => { if (img.complete && !img.naturalWidth) img.remove(); });
+
   // ---------- Formularios: estado "ocupado" ----------
   document.addEventListener("submit", (e) => {
     const confirmMsg = e.target.dataset?.confirm;
@@ -81,12 +87,52 @@
     const act = e.target.closest("[data-act]")?.dataset.act;
     if (act === "star") return toggleStar(entry);
     if (act === "read") return setRead(entry, !entry.classList.contains("read"));
-    if (e.target.closest(".entry-main")) setRead(entry, true);
+    if (!e.target.closest(".entry-main")) return;
+    // Ctrl/Cmd/Mayús + clic sigue abriendo el original en otra pestaña.
+    if (e.ctrlKey || e.metaKey || e.shiftKey) return setRead(entry, true);
+    e.preventDefault();
+    openPreview(entry);
   });
   document.addEventListener("auxclick", (e) => {
     const entry = e.target.closest(".entry");
     if (entry && e.button === 1 && e.target.closest(".entry-main")) setRead(entry, true);
   });
+
+  // ---------- Vista previa: decidir antes de ir al artículo ----------
+  const preview = $("#preview");
+  let shown = null;
+
+  function renderPreview() {
+    const link = shown.querySelector(".entry-main").getAttribute("href");
+    const summary = ($(".sum", shown)?.textContent ?? "").replace(/^\s*—\s*/, "");
+    $("#preview-source").textContent = $(".source", shown).textContent;
+    $("#preview-when").textContent = $(".when", shown).textContent;
+    $("#preview-title").textContent = $(".title", shown).textContent;
+    const text = $("#preview-summary");
+    text.textContent = summary || "Este artículo no trae resumen en su feed.";
+    text.classList.toggle("none", !summary);
+    $(".drawer-body", preview).scrollTop = 0;
+    const open = $("#preview-link");
+    open.hidden = !link;
+    if (link) open.href = link;
+    $("#preview-star").textContent = shown.classList.contains("starred") ? "Quitar de guardados" : "Guardar";
+    $("#preview-read").textContent = shown.classList.contains("read") ? "Marcar no leído" : "Marcar leído";
+  }
+
+  function openPreview(entry) {
+    shown = entry;
+    focusEntry(entry);
+    setRead(entry, true);
+    renderPreview();
+    if (!preview.open) preview.showModal();
+    const open = $("#preview-link");
+    (open.hidden ? $("#preview-close") : open).focus({ preventScroll: true });
+  }
+
+  $("#preview-close")?.addEventListener("click", () => preview.close());
+  preview?.addEventListener("click", (e) => { if (e.target === preview) preview.close(); });
+  $("#preview-star")?.addEventListener("click", () => { toggleStar(shown); renderPreview(); });
+  $("#preview-read")?.addEventListener("click", () => { setRead(shown, !shown.classList.contains("read")); renderPreview(); });
 
   // ---------- Cargar más ----------
   document.addEventListener("click", async (e) => {
@@ -220,10 +266,19 @@
     if (e.metaKey || e.ctrlKey || e.altKey || dlg?.open || /input|textarea/i.test(e.target.tagName)) return;
     const list = $$(".entry");
     const i = current ? list.indexOf(current) : -1;
+    if (preview?.open) {
+      if (e.key === "j" && list[i + 1]) openPreview(list[i + 1]);
+      if (e.key === "k" && i > 0) openPreview(list[i - 1]);
+      if (e.key === "s") { toggleStar(shown); renderPreview(); }
+      if (e.key === "m") { setRead(shown, !shown.classList.contains("read")); renderPreview(); }
+      if (e.key === "v") $("#preview-link").click();
+      return;
+    }
     switch (e.key) {
       case "j": focusEntry(list[i + 1] ?? list[0]); if (i + 2 >= list.length) $(".more")?.click(); break;
       case "k": focusEntry(list[Math.max(0, i - 1)]); break;
       case "o": case "Enter": if (current) $(".entry-main", current).click(); break;
+      case "v": if (current) { setRead(current, true); window.open($(".entry-main", current).href, "_blank", "noopener"); } break;
       case "s": if (current) toggleStar(current); break;
       case "m": if (current) setRead(current, !current.classList.contains("read")); break;
       case "/": e.preventDefault(); $(".add input[name=url]")?.focus(); break;

@@ -9,6 +9,7 @@ export interface Sub {
   name: string;
   url: string;
   site_url: string;
+  favicon_url: string;
   last_error: string;
   folder: string;
   unread: number;
@@ -45,7 +46,7 @@ export async function listSubs(db: D1Database, userId: number): Promise<Sub[]> {
   const { results } = await db
     .prepare(
       `SELECT f.id, COALESCE(NULLIF(s.title, ''), NULLIF(f.title, ''), f.url) AS name,
-              f.url, f.site_url, f.last_error, s.folder,
+              f.url, f.site_url, f.favicon_url, f.last_error, s.folder,
               (SELECT COUNT(*) FROM entries e
                  LEFT JOIN entry_state st ON st.entry_id = e.id AND st.user_id = s.user_id
                 WHERE e.feed_id = f.id AND e.sort_at > ${h} AND ${READ(h)} = 0) AS unread

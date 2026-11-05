@@ -34,8 +34,8 @@ describe("OPML con carpetas", () => {
   });
   it("las exporta de vuelta", () => {
     const out = buildOpml([
-      { id: 1, name: "A", url: "https://a.test/rss", site_url: "", last_error: "", folder: "Tech", unread: 0 },
-      { id: 2, name: "B & C", url: "https://b.test/rss", site_url: "", last_error: "", folder: "", unread: 0 },
+      { id: 1, name: "A", url: "https://a.test/rss", site_url: "", favicon_url: "", last_error: "", folder: "Tech", unread: 0 },
+      { id: 2, name: "B & C", url: "https://b.test/rss", site_url: "", favicon_url: "", last_error: "", folder: "", unread: 0 },
     ]);
     expect(out).toContain('<outline text="Tech"');
     expect(out).toContain('text="B &amp; C"');

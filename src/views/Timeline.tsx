@@ -33,12 +33,9 @@ export const EntryList: FC<{ entries: Entry[]; next: string | null; moreHref: st
   );
 };
 
-const WINDOWS: Record<View, string> = { unread: "sin-leer", all: "todo", starred: "guardados" };
-
 interface Props {
-  /** Parte local del correo: se muestra en el prompt, como `usuario@reader`. */
-  username: string;
   view: View;
+  heading: string;
   feed: Sub | null;
   folder?: string;
   hasFeeds: boolean;
@@ -47,19 +44,8 @@ interface Props {
   base: string; // "/", "/feed/3" o "/folder/Tech"
 }
 
-export const Timeline: FC<Props> = ({ username, view, feed, folder, hasFeeds, entries, next, base }) => {
+export const Timeline: FC<Props> = ({ view, heading, feed, folder, hasFeeds, entries, next, base }) => {
   const here = `${base}?v=${view}`;
-  const dir = feed?.name ?? folder ?? WINDOWS[view];
-  const ps1 = (
-    <>
-      <span class="ps1">{username}@reader</span>:
-    </>
-  );
-  const win = (v: View, n: number) => (
-    <a href={v === "starred" ? "/?v=starred" : `${base}?v=${v}`} class={view === v ? "win-active" : ""} aria-current={view === v ? "page" : undefined}>
-      {n}:{WINDOWS[v]}{view === v ? "*" : ""}
-    </a>
-  );
   const hidden = (
     <>
       <input type="hidden" name="back" value={here} />
@@ -71,11 +57,10 @@ export const Timeline: FC<Props> = ({ username, view, feed, folder, hasFeeds, en
   return (
     <>
       <div class="term">
-      <div class="term-bar"><span></span><span></span><span></span><em>{username}@reader: ~/{dir}</em></div>
       <div class="term-body">
       <div class="page-head">
         <div class="titles">
-          {ps1}<h1>~/{dir}</h1><span class="pre">$ ls -lt</span>
+          <h1>{heading}</h1>
           {feed ? (
             <a class="sub" href={feed.site_url || feed.url} target="_blank" rel="noopener noreferrer">
               {new URL(feed.site_url || feed.url).hostname}
@@ -83,6 +68,12 @@ export const Timeline: FC<Props> = ({ username, view, feed, folder, hasFeeds, en
           ) : null}
         </div>
         <div class="tools">
+          {view !== "starred" ? (
+            <div class="seg" role="tablist">
+              <a href={`${base}?v=unread`} class={view === "unread" ? "active" : ""} role="tab" aria-selected={view === "unread"}>Sin leer</a>
+              <a href={`${base}?v=all`} class={view === "all" ? "active" : ""} role="tab" aria-selected={view === "all"}>Todo</a>
+            </div>
+          ) : null}
           <form method="post" action="/refresh" data-busy="Actualizando…">
             <input type="hidden" name="back" value={here} />
             <button class="ghost" type="submit" title="Buscar novedades ahora"><Icon name="refresh" /> <span>Actualizar</span></button>
@@ -103,12 +94,7 @@ export const Timeline: FC<Props> = ({ username, view, feed, folder, hasFeeds, en
       <section class="list" id="list">
         {entries.length ? <EntryList entries={entries} next={next} moreHref={here} /> : <Empty view={view} hasFeeds={hasFeeds} base={base} />}
       </section>
-      <p class="prompt-end">{ps1}<span class="cwd">~/{dir}</span>$ <span class="cursor">_</span></p>
       </div>
-      <nav class="tmux app-tmux" aria-label="Vistas">
-        <span>[reader] {win("unread", 0)} {win("all", 1)} {win("starred", 2)}</span>
-        <span class="tmux-right">"lector rss"</span>
-      </nav>
       </div>
     </>
   );

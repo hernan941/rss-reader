@@ -51,6 +51,9 @@ export function decodeEntities(s: string): string {
   });
 }
 
+/** Lo que se muestra en el panel de vista previa, para decidir si leer el artículo completo. */
+export const SUMMARY_MAX = 1000;
+
 export function stripHtml(html: string, max = 280): string {
   const plain = decodeEntities(
     html
@@ -103,9 +106,25 @@ function atomLink(links: Node, base: string): string {
   return absolute(typeof alt === "string" ? alt : alt["@_href"] ?? "", base);
 }
 
+/** URL del icono que declara una página, o "" si no declara ninguno. */
+export function findFavicon(html: string, baseUrl: string): string {
+  let touch = "";
+  for (const tag of html.match(/<link\b[^>]*>/gi) ?? []) {
+    const rel = attr(tag, "rel").toLowerCase();
+    const href = attr(tag, "href");
+    if (!href) continue;
+    const url = absolute(decodeEntities(href), baseUrl);
+    if (!url) continue;
+    if (rel.split(/\s+/).includes("icon")) return url;
+    if (rel.startsWith("apple-touch-icon") && !touch) touch = url;
+  }
+  return touch;
+}
+
 function buildEntry(item: Node, base: string, now: number, atom: boolean): ParsedEntry | null {
   const link = atom ? atomLink(item.link, base) : absolute(text(item.link), base);
   const body = text(item["content:encoded"]) || text(item.content) || text(item.description) || text(item.summary);
+  const description = text(item.description) || text(item.summary);
   const title = stripHtml(text(item.title), 300) || link;
   const guid = text(item.guid) || text(item.id) || link || title;
   if (!guid || (!link && !title)) return null;
@@ -117,7 +136,7 @@ function buildEntry(item: Node, base: string, now: number, atom: boolean): Parse
     guid,
     title,
     link,
-    summary: stripHtml(text(item.description) || text(item.summary) || body),
+    summary: stripHtml(body.length >= description.length ? body : description, SUMMARY_MAX),
     image: mediaImage(item, base) || firstImage(body, base),
     publishedAt: parseDate(date, now),
   };
@@ -165,12 +184,18 @@ export function parseFeed(xml: string, baseUrl: string, now = Date.now()): Parse
 }
 
 /** Busca <link rel="alternate" type="application/rss+xml"> en una página HTML. */
+/** Valor de un atributo HTML, con o sin comillas (el HTML minificado suele omitirlas). */
+function attr(tag: string, name: string): string {
+  const m = new RegExp(`\\s${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, "i").exec(tag);
+  return m?.[1] ?? m?.[2] ?? m?.[3] ?? "";
+}
+
 export function findFeedLinks(html: string, baseUrl: string): string[] {
   const out: string[] = [];
   for (const tag of html.match(/<link\b[^>]*>/gi) ?? []) {
-    if (!/rel=["']?alternate/i.test(tag)) continue;
-    if (!/type=["']?application\/(rss|atom)\+xml/i.test(tag)) continue;
-    const href = /href=["']([^"']+)["']/i.exec(tag)?.[1];
+    if (attr(tag, "rel").toLowerCase() !== "alternate") continue;
+    if (!/^application\/(rss|atom)\+xml/i.test(attr(tag, "type"))) continue;
+    const href = attr(tag, "href");
     const url = href && absolute(decodeEntities(href), baseUrl);
     if (url && !out.includes(url)) out.push(url);
   }

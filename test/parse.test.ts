@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findFeedLinks, parseFeed, stripHtml } from "../src/parse";
+import { findFavicon, findFeedLinks, parseFeed, stripHtml } from "../src/parse";
 import { parseOpml } from "../src/opml";
 
 const NOW = Date.parse("2026-01-10T00:00:00Z");
@@ -54,6 +54,10 @@ describe("helpers", () => {
   it("limpia HTML y recorta", () => {
     expect(stripHtml("<p>a&nbsp;b</p><script>x()</script>")).toBe("a b");
     expect(stripHtml("palabra ".repeat(100), 20).endsWith("…")).toBe(true);
+    const long = "palabra ".repeat(400);
+    const feed = parseFeed(`<rss><channel><title>t</title><item><title>a</title><link>https://a.test/1</link><description>corta</description><content:encoded>${long}</content:encoded></item></channel></rss>`, "https://a.test/");
+    expect(feed!.entries[0].summary.length).toBeGreaterThan(280);
+    expect(feed!.entries[0].summary.length).toBeLessThanOrEqual(1001);
   });
   it("lee OPML anidado", () => {
     const opml = `<opml><body><outline text="Cat"><outline text="A" xmlUrl="https://a.test/rss"/></outline>
@@ -62,5 +66,27 @@ describe("helpers", () => {
       { url: "https://a.test/rss", title: "A", folder: "Cat" },
       { url: "https://b.test/feed", title: "B", folder: "" },
     ]);
+  });
+});
+
+describe("favicon", () => {
+  const base = "https://blog.test/a/";
+  it("devuelve una sola URL absoluta", () => {
+    expect(findFavicon(`<link rel="icon" href="/f.svg"><link rel="icon" href="/g.png">`, base)).toBe("https://blog.test/f.svg");
+  });
+  it("entiende shortcut icon y cualquier orden de atributos", () => {
+    expect(findFavicon(`<link href="f.ico" type="image/x-icon" rel="shortcut icon">`, base)).toBe("https://blog.test/a/f.ico");
+  });
+  it("prefiere icon sobre apple-touch-icon, pero lo usa si no hay otro", () => {
+    expect(findFavicon(`<link rel="apple-touch-icon" href="/t.png"><link rel="icon" href="/i.png">`, base)).toBe("https://blog.test/i.png");
+    expect(findFavicon(`<link rel="apple-touch-icon" href="/t.png">`, base)).toBe("https://blog.test/t.png");
+  });
+  it("entiende HTML minificado, sin comillas", () => {
+    const html = `<link rel=icon type=image/svg+xml href=https://blog.test/images/f.svg><link rel=alternate type=application/rss+xml href=/feed.xml title="Blog">`;
+    expect(findFavicon(html, base)).toBe("https://blog.test/images/f.svg");
+    expect(findFeedLinks(html, base)).toEqual(["https://blog.test/feed.xml"]);
+  });
+  it("ignora mask-icon, data: y javascript:", () => {
+    expect(findFavicon(`<link rel="mask-icon" href="/m.svg"><link rel="icon" href="data:image/png;base64,AAAA"><link rel="icon" href="javascript:alert(1)">`, base)).toBe("");
   });
 });

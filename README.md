@@ -12,11 +12,13 @@ Corre en Cloudflare, normalmente dentro del plan gratuito:
 - **Agregar fuentes:** pega la URL de un sitio o de un feed; detecta el feed automáticamente.
 - **Lista densa** (una fila por artículo) con lo último de todas tus fuentes: *Sin leer / Todo / Guardados*.
 - **Barra lateral con acciones:** el botón `⋯` de cada fuente y carpeta (y de la cabecera) abre un menú: marcar como leído, renombrar, mover a carpeta, dejar de seguir.
+- **Favicons** en la barra lateral: se guarda solo el enlace, no la imagen; si falla, se muestra la inicial.
 - **Carpetas** para agrupar fuentes.
+- **Vista previa:** al hacer clic en un artículo se abre un panel con su resumen, para decidir si leerlo completo. Ctrl/Cmd+clic abre el original directamente.
 - **Guardar** artículos con la estrella; **marcar leído** al abrirlos (o a mano).
 - **Importar / exportar OPML** (con carpetas), para traer tus feeds desde Feedly.
-- Atajos: `j`/`k` moverse · `o` abrir · `s` guardar · `m` leído/no leído · `/` agregar fuente.
-- Estética de terminal, igual que [hernan941.com](https://hernan941.com/), y diseño adaptado a móvil.
+- Atajos: `j`/`k` moverse · `o` vista previa · `v` abrir original · `s` guardar · `m` leído/no leído · `/` agregar fuente.
+- Tema oscuro con los colores, la tipografía y el aire de terminal de [hernan941.com](https://hernan941.com/), sin animaciones de parpadeo, y diseño adaptado a móvil.
 
 ## Desarrollo local
 
