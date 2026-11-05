@@ -90,8 +90,11 @@ button { cursor: pointer; }
 .active .count { color: var(--accent); }
 .section-title {
   margin: 18px 8px 4px; font: 12px/1.5 var(--mono); color: var(--faint);
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
 }
-.feeds { display: flex; flex-direction: column; gap: 1px; padding-bottom: 16px; }
+/* Solo la lista de fuentes se desplaza; el resto de la barra queda fijo. */
+.feeds { flex: 1 1 0; min-height: 96px; overflow-y: auto; scrollbar-width: thin; display: flex; flex-direction: column; gap: 1px; padding-bottom: 16px; }
+.feeds > * { flex: none; }
 .hint { margin: 6px 8px; color: var(--muted); font-size: 13px; }
 
 .row { position: relative; border-radius: 6px; }
@@ -128,7 +131,7 @@ details[open] > summary .chev { transform: rotate(90deg); }
 .row-menu:hover, .row-menu[aria-expanded="true"] { background: var(--border); color: var(--text); }
 .head-menu { position: static; transform: none; width: 30px; height: 30px; opacity: 1; }
 
-.sidebar-foot { position: sticky; bottom: 0; margin: auto -8px 0; padding: 10px 16px 12px; background: var(--side); border-top: 1px solid var(--border); }
+.sidebar-foot { flex: none; margin: 0 -8px 0; padding: 10px 16px 12px; background: var(--side); border-top: 1px solid var(--border); }
 .who { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .links { display: flex; gap: 14px; margin-top: 4px; font-size: 12px; }
 .links form { margin: 0; }
@@ -189,7 +192,7 @@ dialog.drawer[open] { display: flex; flex-direction: column; }
 .content { margin-left: var(--side-w); padding: 16px 20px; }
 .content > * { max-width: 1120px; margin-left: auto; margin-right: auto; }
 .content > .term { min-height: calc(100vh - 32px); }
-.section-title::before { content: "# "; }
+.section-title > span::before { content: "# "; }
 .topbar { display: none; }
 
 .page-head {

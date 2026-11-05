@@ -9,7 +9,7 @@ import {
   recordHit, startSession, validEmail, verifyPassword, type User,
 } from "./auth";
 import {
-  cleanFolder, countStarred, countSubs, createUser, findUserByEmail, importFeeds, listSubs, markAllRead,
+  cleanFolder, countStarred, countSubs, createFolder, createUser, deleteFolder, findUserByEmail, importFeeds, listFolders, listSubs, markAllRead,
   MAX_FEEDS_PER_USER, moveSub, queryEntries, renameFolder, renameSub, saveEntries, setFlag, subscribe, unsubscribe,
   type View,
 } from "./db";
@@ -187,16 +187,17 @@ async function renderTimeline(c: any, scope: { feedId?: number; folder?: string 
     return c.html(<EntryList entries={entries} next={next} moreHref={`${base}?v=${view}`} />);
   }
 
-  const [subs, starred, page] = await Promise.all([listSubs(db, user.id), countStarred(db, user.id), queryEntries(db, user.id, q)]);
+  const [subs, starred, page, folders] = await Promise.all([listSubs(db, user.id), countStarred(db, user.id), queryEntries(db, user.id, q), listFolders(db, user.id)]);
   const feed = scope.feedId ? subs.find((s) => s.id === scope.feedId) ?? null : null;
-  if ((scope.feedId && !feed) || (scope.folder !== undefined && !subs.some((s) => s.folder === scope.folder))) {
+  const folderHasFeeds = subs.some((s) => s.folder === scope.folder);
+  if ((scope.feedId && !feed) || (scope.folder !== undefined && !folderHasFeeds && !folders.includes(scope.folder))) {
     return c.redirect("/");
   }
 
   const heading = feed ? feed.name : scope.folder !== undefined ? scope.folder : view === "unread" ? "Sin leer" : view === "starred" ? "Guardados" : "Todo";
   return c.html(
-    <Layout user={user} admin={isAdmin(user.email, c.env)} subs={subs} starred={starred} view={view} feedId={scope.feedId} folder={scope.folder} title={heading} msg={c.req.query("msg")} err={c.req.query("err")}>
-      <Timeline view={view} heading={heading} feed={feed} folder={scope.folder} hasFeeds={subs.length > 0} entries={page.entries} next={page.next} base={base} />
+    <Layout user={user} admin={isAdmin(user.email, c.env)} subs={subs} folders={folders} starred={starred} view={view} feedId={scope.feedId} folder={scope.folder} title={heading} msg={c.req.query("msg")} err={c.req.query("err")}>
+      <Timeline view={view} heading={heading} feed={feed} folder={scope.folder} hasFeeds={subs.length > 0} emptyFolder={scope.folder !== undefined && !folderHasFeeds} entries={page.entries} next={page.next} base={base} />
     </Layout>,
   );
 }
@@ -243,6 +244,23 @@ app.post("/feeds/:id{[0-9]+}/folder", async (c) => {
   const body = await c.req.parseBody();
   await moveSub(c.env.DB, c.get("user").id, Number(c.req.param("id")), String(body.folder ?? ""));
   return c.redirect(safeBack(body.back));
+});
+
+app.post("/folders", async (c) => {
+  const body = await c.req.parseBody();
+  const back = safeBack(body.back);
+  const name = cleanFolder(body.name);
+  if (!name) return c.redirect(withParam(back, "err", "Escribe un nombre para la carpeta"));
+  if (!(await createFolder(c.env.DB, c.get("user").id, name))) {
+    return c.redirect(withParam(back, "err", "Llegaste al máximo de carpetas"));
+  }
+  return c.redirect(`/folder/${enc(name)}?v=all`);
+});
+
+app.post("/folders/delete", async (c) => {
+  const body = await c.req.parseBody();
+  await deleteFolder(c.env.DB, c.get("user").id, String(body.name ?? ""));
+  return c.redirect(`/?msg=${enc("Carpeta eliminada. Sus fuentes se conservan.")}`);
 });
 
 app.post("/folders/rename", async (c) => {

@@ -39,12 +39,13 @@ interface Props {
   feed: Sub | null;
   folder?: string;
   hasFeeds: boolean;
+  emptyFolder: boolean;
   entries: Entry[];
   next: string | null;
   base: string; // "/", "/feed/3" o "/folder/Tech"
 }
 
-export const Timeline: FC<Props> = ({ view, heading, feed, folder, hasFeeds, entries, next, base }) => {
+export const Timeline: FC<Props> = ({ view, heading, feed, folder, hasFeeds, emptyFolder, entries, next, base }) => {
   const here = `${base}?v=${view}`;
   const hidden = (
     <>
@@ -92,7 +93,7 @@ export const Timeline: FC<Props> = ({ view, heading, feed, folder, hasFeeds, ent
       {feed?.last_error ? <div class="flash err">Última actualización fallida: {feed.last_error}</div> : null}
 
       <section class="list" id="list">
-        {entries.length ? <EntryList entries={entries} next={next} moreHref={here} /> : <Empty view={view} hasFeeds={hasFeeds} base={base} />}
+        {entries.length ? <EntryList entries={entries} next={next} moreHref={here} /> : <Empty view={view} hasFeeds={hasFeeds} emptyFolder={emptyFolder} base={base} />}
       </section>
       </div>
       </div>
@@ -100,7 +101,15 @@ export const Timeline: FC<Props> = ({ view, heading, feed, folder, hasFeeds, ent
   );
 };
 
-const Empty: FC<{ view: View; hasFeeds: boolean; base: string }> = ({ view, hasFeeds, base }) => {
+const Empty: FC<{ view: View; hasFeeds: boolean; emptyFolder: boolean; base: string }> = ({ view, hasFeeds, emptyFolder, base }) => {
+  if (emptyFolder) {
+    return (
+      <div class="empty">
+        <h2>Esta carpeta está vacía</h2>
+        <p>Para agregar una fuente, pulsa ⋯ junto a ella en la barra lateral y elige “Mover a carpeta…”.</p>
+      </div>
+    );
+  }
   if (!hasFeeds) {
     return (
       <div class="empty">

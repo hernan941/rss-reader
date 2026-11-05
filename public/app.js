@@ -180,6 +180,11 @@
     });
   $("#dlg-cancel")?.addEventListener("click", () => dlg.close("cancel"));
 
+  $("#new-folder")?.addEventListener("click", async () => {
+    const name = await ask("Nombre de la nueva carpeta");
+    if (name?.trim()) postForm("/folders", { name, back: here() });
+  });
+
   const ACTIONS = {
     feed: (d) => [
       ["Marcar como leído", () => postForm("/read-all", { feed: d.id, back: here() })],
@@ -188,7 +193,7 @@
         if (name !== null) postForm(`/feeds/${d.id}/rename`, { name, back: here() });
       }],
       ["Mover a carpeta…", async () => {
-        const folder = await ask("Carpeta (déjalo vacío para quitarla)", d.folder);
+        const folder = await ask("Carpeta: elige una o escribe una nueva (vacío = sin carpeta)", d.folder);
         if (folder !== null) postForm(`/feeds/${d.id}/folder`, { folder, back: here() });
       }],
       null,
@@ -203,9 +208,9 @@
         if (to) postForm("/folders/rename", { from: d.name, to });
       }],
       null,
-      ["Sacar las fuentes de la carpeta", () => {
-        if (confirm(`Las fuentes de “${d.name}” se conservan, pero sin carpeta. ¿Continuar?`)) {
-          postForm("/folders/rename", { from: d.name, to: "" });
+      ["Eliminar carpeta", () => {
+        if (confirm(`¿Eliminar la carpeta “${d.name}”? Sus fuentes no se borran: quedan sin carpeta.`)) {
+          postForm("/folders/delete", { name: d.name });
         }
       }, true],
     ],
@@ -252,6 +257,7 @@
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(); });
   addEventListener("resize", closeMenu);
   $("#sidebar")?.addEventListener("scroll", closeMenu);
+  $(".feeds")?.addEventListener("scroll", closeMenu);
 
   // ---------- Atajos de teclado ----------
   let current = null;

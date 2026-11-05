@@ -59,6 +59,7 @@ interface Props {
   user: { email: string };
   admin?: boolean;
   subs: Sub[];
+  folders: string[];
   starred: number;
   view: View;
   feedId?: number;
@@ -69,10 +70,12 @@ interface Props {
   children?: Child;
 }
 
-export const Layout: FC<Props> = ({ user, admin, subs, starred, view, feedId, folder, title, msg, err, children }) => {
+export const Layout: FC<Props> = ({ user, admin, subs, folders: folderNames, starred, view, feedId, folder, title, msg, err, children }) => {
   const unread = subs.reduce((n, f) => n + f.unread, 0);
-  const folders = new Map<string, Sub[]>();
-  for (const f of subs) if (f.folder) folders.set(f.folder, [...(folders.get(f.folder) ?? []), f]);
+  const names = new Set(folderNames);
+  for (const f of subs) if (f.folder) names.add(f.folder);
+  const sorted = [...names].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+  const folders = new Map<string, Sub[]>(sorted.map((n) => [n, subs.filter((f) => f.folder === n)]));
   const loose = subs.filter((f) => !f.folder);
   const home = !feedId && folder === undefined;
 
@@ -106,7 +109,10 @@ export const Layout: FC<Props> = ({ user, admin, subs, starred, view, feedId, fo
               </a>
             </nav>
 
-            <div class="section-title">Fuentes</div>
+            <div class="section-title">
+              <span>Fuentes</span>
+              <button class="link-btn" id="new-folder" type="button">+ Carpeta</button>
+            </div>
             <nav class="feeds">
               {[...folders].map(([name, list]) => (
                 <details class="folder" open data-folder={name}>

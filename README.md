@@ -13,7 +13,7 @@ Corre en Cloudflare, normalmente dentro del plan gratuito:
 - **Lista densa** (una fila por artículo) con lo último de todas tus fuentes: *Sin leer / Todo / Guardados*.
 - **Barra lateral con acciones:** el botón `⋯` de cada fuente y carpeta (y de la cabecera) abre un menú: marcar como leído, renombrar, mover a carpeta, dejar de seguir.
 - **Favicons** en la barra lateral: se guarda solo el enlace, no la imagen; si falla, se muestra la inicial.
-- **Carpetas** para agrupar fuentes.
+- **Carpetas** para agrupar fuentes: créalas con **+ Carpeta**, y elimínalas desde su menú `⋯` sin perder las fuentes.
 - **Vista previa:** al hacer clic en un artículo se abre un panel con su resumen, para decidir si leerlo completo. Ctrl/Cmd+clic abre el original directamente.
 - **Guardar** artículos con la estrella; **marcar leído** al abrirlos (o a mano).
 - **Importar / exportar OPML** (con carpetas), para traer tus feeds desde Feedly.

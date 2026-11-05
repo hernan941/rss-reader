@@ -39,6 +39,37 @@ const READ = (h: number) => `COALESCE(st.is_read, CASE WHEN e.sort_at <= ${h} TH
 
 export const cleanFolder = (s: unknown) => String(s ?? "").replace(/\s+/g, " ").trim().slice(0, 40);
 
+// ---------- Carpetas ----------
+
+const MAX_FOLDERS_PER_USER = 100;
+
+const addFolder = (db: D1Database, userId: number, name: string, now = Date.now()) =>
+  db
+    .prepare(
+      `INSERT OR IGNORE INTO folders (user_id, name, created_at)
+       SELECT ?1, ?2, ?3 WHERE (SELECT COUNT(*) FROM folders WHERE user_id = ?1) < ${MAX_FOLDERS_PER_USER}`,
+    )
+    .bind(userId, name, now);
+
+export async function listFolders(db: D1Database, userId: number): Promise<string[]> {
+  const { results } = await db.prepare(`SELECT name FROM folders WHERE user_id = ?`).bind(userId).all<{ name: string }>();
+  return results.map((r) => r.name);
+}
+
+/** Crea la carpeta si no existe. Devuelve false si se alcanzó el máximo. */
+export async function createFolder(db: D1Database, userId: number, name: string): Promise<boolean> {
+  await addFolder(db, userId, name).run();
+  return !!(await db.prepare(`SELECT 1 FROM folders WHERE user_id = ? AND name = ?`).bind(userId, name).first());
+}
+
+/** Elimina la carpeta; sus fuentes se conservan, sin carpeta. */
+export async function deleteFolder(db: D1Database, userId: number, name: string) {
+  await db.batch([
+    db.prepare(`UPDATE subscriptions SET folder = '' WHERE user_id = ? AND folder = ?`).bind(userId, name),
+    db.prepare(`DELETE FROM folders WHERE user_id = ? AND name = ?`).bind(userId, name),
+  ]);
+}
+
 // ---------- Suscripciones ----------
 
 export async function listSubs(db: D1Database, userId: number): Promise<Sub[]> {
@@ -110,17 +141,21 @@ export async function renameSub(db: D1Database, userId: number, feedId: number, 
 }
 
 export async function moveSub(db: D1Database, userId: number, feedId: number, folder: string) {
-  await db
-    .prepare(`UPDATE subscriptions SET folder = ? WHERE user_id = ? AND feed_id = ?`)
-    .bind(cleanFolder(folder), userId, feedId)
-    .run();
+  const name = cleanFolder(folder);
+  await db.batch([
+    ...(name ? [addFolder(db, userId, name)] : []),
+    db.prepare(`UPDATE subscriptions SET folder = ? WHERE user_id = ? AND feed_id = ?`).bind(name, userId, feedId),
+  ]);
 }
 
 export async function renameFolder(db: D1Database, userId: number, from: string, to: string) {
-  await db
-    .prepare(`UPDATE subscriptions SET folder = ? WHERE user_id = ? AND folder = ?`)
-    .bind(cleanFolder(to), userId, from)
-    .run();
+  const name = cleanFolder(to);
+  if (!name || name === from) return;
+  await db.batch([
+    db.prepare(`DELETE FROM folders WHERE user_id = ? AND name = ?`).bind(userId, from),
+    addFolder(db, userId, name),
+    db.prepare(`UPDATE subscriptions SET folder = ? WHERE user_id = ? AND folder = ?`).bind(name, userId, from),
+  ]);
 }
 
 /** Importa feeds de un OPML ya parseado. Devuelve cuántos se suscribieron. */
@@ -132,6 +167,8 @@ export async function importFeeds(
 ): Promise<number> {
   const room = MAX_FEEDS_PER_USER - (await countSubs(db, userId));
   const list = feeds.slice(0, Math.max(0, room));
+  const names = [...new Set(list.map((f) => cleanFolder(f.folder)).filter(Boolean))];
+  if (names.length) await db.batch(names.map((n) => addFolder(db, userId, n, now)));
   const addFeed = db.prepare(`INSERT OR IGNORE INTO feeds (url, title, created_at, last_checked_at) VALUES (?, ?, ?, 0)`);
   const addSub = db.prepare(
     `INSERT OR IGNORE INTO subscriptions (user_id, feed_id, title, folder, created_at)
