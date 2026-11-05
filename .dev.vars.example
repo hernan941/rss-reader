@@ -1,0 +1,5 @@
+# Copia este archivo a .dev.vars para desarrollo local (wrangler dev lo lee al arrancar).
+# Correos con acceso a /admin, separados por comas.
+ADMIN_EMAILS=tu-correo@ejemplo.com
+# Opcional: exige un código para registrarse.
+# INVITE_CODE=lo-que-quieras

@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "rss-dashboard",
+  "main": "src/index.tsx",
+  "compatibility_date": "2025-09-01",
+  "assets": { "directory": "./public" },
+  // Cloudflare crea el registro DNS y el certificado al desplegar.
+  // Requiere que hernan941.com esté como zona en esta misma cuenta.
+  "routes": [{ "pattern": "reader.hernan941.com", "custom_domain": true }],
+  // Sin esto, `wrangler dev` simula el dominio de arriba por HTTP y la app redirige a producción.
+  "dev": { "host": "localhost" },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "rss-dashboard",
+      "database_id": "e5187199-477c-4c77-9be6-af6d94742abe",
+      "migrations_dir": "migrations"
+    }
+  ],
+  // Revisa los feeds más antiguos cada 15 minutos
+  "triggers": { "crons": ["*/15 * * * *"] }
+}
