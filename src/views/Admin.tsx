@@ -36,13 +36,16 @@ export const AdminPage: FC<Props> = ({ me, users, admins, reg, stats, msg, err }
         <body class="admin-body">
           <main class="admin">
             <header class="admin-head">
-              <h1>Administración</h1>
+              <h1 class="admin-title"><span class="prompt">$</span> sudo admin<span class="cursor">_</span></h1>
               <a class="ghost" href="/">← Volver al lector</a>
             </header>
 
             {msg ? <div class="flash ok" role="status">{msg}</div> : null}
             {err ? <div class="flash err" role="alert">{err}</div> : null}
 
+            <div class="term">
+            <div class="term-bar"><span></span><span></span><span></span><em>root@reader: ~/admin</em></div>
+            <div class="term-body">
             <div class="stats">
               <div><b>{users.length}</b><span>usuarios</span></div>
               <div><b>{online}</b><span>en línea</span></div>
@@ -128,6 +131,9 @@ export const AdminPage: FC<Props> = ({ me, users, admins, reg, stats, msg, err }
               </div>
               <p class="hint">“En línea” = sesión activa y actividad en los últimos 10 minutos. Los administradores se definen en <code>ADMIN_EMAILS</code>.</p>
             </section>
+            </div>
+            <div class="tmux"><span>[reader] <span class="win-active">0:admin*</span></span><span>"lector rss"</span></div>
+            </div>
           </main>
         </body>
       </html>

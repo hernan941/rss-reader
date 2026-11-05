@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Gatito negro: cabeza y orejas -->
+  <path d="M11 27 L8 5 L26 16 Q32 14 38 16 L56 5 L53 27 Q59 36 56 46 Q50 60 32 60 Q14 60 8 46 Q5 36 11 27 Z"
+        fill="#111318" stroke="#e6e6e6" stroke-width="3" stroke-linejoin="round"/>
+  <!-- Orejas internas -->
+  <path d="M14 22 L13 12 L21 17 Z M50 22 L51 12 L43 17 Z" fill="#3c404b"/>
+  <!-- Cara de terminal: >_ -->
+  <polyline points="19,32 27,38 19,44" fill="none" stroke="#7ec16e" stroke-width="4.5"
+            stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="32" y1="46" x2="45" y2="46" stroke="#7ec16e" stroke-width="4.5" stroke-linecap="round"/>
+</svg>

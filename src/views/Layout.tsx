@@ -2,8 +2,6 @@ import { raw } from "hono/html";
 import type { Child, FC } from "hono/jsx";
 import type { Sub, View } from "../db";
 
-export const hue = (id: number) => (id * 67) % 360;
-
 const PATHS: Record<string, string> = {
   menu: "M4 6h16M4 12h16M4 18h16",
   star: "M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 17l-5.2 2.7 1-5.9-4.3-4.1 5.9-.8z",
@@ -22,16 +20,14 @@ export const Icon: FC<{ name: keyof typeof PATHS }> = ({ name }) => (
   </svg>
 );
 
-const FAVICON =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232563eb'/%3E%3Cpath d='M9 22a1.5 1.5 0 110 .01M9 15a8 8 0 018 8M9 9a14 14 0 0114 14' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E";
-
 export const Head: FC<{ title: string }> = ({ title }) => (
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#1d1f27" />
     <title>{title} · Lector RSS</title>
-    <link rel="icon" href={FAVICON} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="stylesheet" href="/app.css" />
     <script src="/app.js" defer></script>
   </head>
@@ -46,7 +42,7 @@ export const MenuBtn: FC<{ kind: "feed" | "folder"; id?: number; name: string; f
 const FeedRow: FC<{ f: Sub; activeId?: number }> = ({ f, activeId }) => (
   <div class={`row${activeId === f.id ? " active" : ""}`}>
     <a href={`/feed/${f.id}?v=all`} title={f.last_error ? `Error: ${f.last_error}` : f.url}>
-      <span class="avatar" style={`--h:${hue(f.id)}`}>{f.name.charAt(0).toUpperCase()}</span>
+      <span class="avatar">{f.name.charAt(0).toUpperCase()}</span>
       <span class="name">{f.name}</span>
       {f.last_error ? <span class="warn" title={f.last_error}>!</span> : null}
       <span class="count" data-feed-count={f.id}>{f.unread || ""}</span>
@@ -88,8 +84,9 @@ export const Layout: FC<Props> = ({ user, admin, subs, starred, view, feedId, fo
           </header>
 
           <aside class="sidebar" id="sidebar">
+            <a href="/" class="brand"><h1><span class="prompt">$</span> echo "reader"<span class="cursor">_</span></h1></a>
             <form class="add" method="post" action="/feeds" data-busy="Buscando…">
-              <input type="text" name="url" placeholder="Agregar fuente: pega una dirección" required autocomplete="off" aria-label="Dirección del feed" />
+              <input type="text" name="url" placeholder="URL de la fuente" required autocomplete="off" aria-label="Dirección del feed" />
               <button type="submit" aria-label="Agregar"><Icon name="plus" /></button>
             </form>
 

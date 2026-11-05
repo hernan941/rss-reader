@@ -16,7 +16,7 @@ Corre en Cloudflare, normalmente dentro del plan gratuito:
 - **Guardar** artículos con la estrella; **marcar leído** al abrirlos (o a mano).
 - **Importar / exportar OPML** (con carpetas), para traer tus feeds desde Feedly.
 - Atajos: `j`/`k` moverse · `o` abrir · `s` guardar · `m` leído/no leído · `/` agregar fuente.
-- Modo oscuro automático y diseño adaptado a móvil.
+- Estética de terminal, igual que [hernan941.com](https://hernan941.com/), y diseño adaptado a móvil.
 
 ## Desarrollo local
 
