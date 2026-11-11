@@ -52,7 +52,7 @@ export function decodeEntities(s: string): string {
 }
 
 /** Lo que se muestra en el panel de vista previa, para decidir si leer el artículo completo. */
-export const SUMMARY_MAX = 1000;
+export const SUMMARY_MAX = 1500;
 
 export function stripHtml(html: string, max = 280): string {
   const plain = decodeEntities(
@@ -62,6 +62,35 @@ export function stripHtml(html: string, max = 280): string {
   )
     .replace(/\s+/g, " ")
     .trim();
+  return plain.length > max ? plain.slice(0, max).replace(/\s+\S*$/, "") + "…" : plain;
+}
+
+const BLOCK = "p|div|li|ul|ol|h[1-6]|blockquote|pre|tr|figure|figcaption|section|article|header|footer|hr";
+
+/**
+ * HTML a texto plano conservando párrafos. Regla: <br> y las etiquetas de bloque (apertura o cierre)
+ * se vuelven saltos de línea; <li> lleva prefijo "• ". Tras recortar cada línea, toda secuencia de
+ * saltos se convierte en "\n\n" (línea en blanco entre párrafos), salvo entre dos elementos de lista
+ * consecutivos, que se separan con un solo "\n".
+ */
+export function htmlToText(html: string, max = SUMMARY_MAX): string {
+  const raw = decodeEntities(
+    html
+      .replace(/<(script|style)[\s\S]*?<\/\1>/gi, " ")
+      .replace(/<li\b[^>]*>/gi, "\n• ")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(new RegExp(`</?(?:${BLOCK})\\b[^>]*>`, "gi"), "\n")
+      .replace(/<[^>]+>/g, ""),
+  );
+  const lines = raw
+    .split("\n")
+    .map((l) => l.replace(/[ \t\f\v\r\u00a0]+/g, " ").trim())
+    .filter((l) => l !== "");
+  let plain = "";
+  lines.forEach((l, i) => {
+    if (i > 0) plain += l.startsWith("• ") && lines[i - 1].startsWith("• ") ? "\n" : "\n\n";
+    plain += l;
+  });
   return plain.length > max ? plain.slice(0, max).replace(/\s+\S*$/, "") + "…" : plain;
 }
 
@@ -82,8 +111,9 @@ function parseDate(v: string, now: number): number | null {
 }
 
 function firstImage(html: string, base: string): string {
-  const m = /<img[^>]+src=["']([^"']+)["']/i.exec(html);
-  return m ? absolute(decodeEntities(m[1]), base) : "";
+  const tag = /<img\b[^>]*>/i.exec(html)?.[0];
+  const src = tag ? attr(tag, "src") : "";
+  return src ? absolute(decodeEntities(src), base) : "";
 }
 
 function mediaImage(item: Node, base: string): string {
@@ -132,11 +162,18 @@ function buildEntry(item: Node, base: string, now: number, atom: boolean): Parse
   const date =
     text(item.pubDate) || text(item.published) || text(item.updated) || text(item["dc:date"]) || text(item.date);
 
+  let summary = htmlToText(body.length >= description.length ? body : description, SUMMARY_MAX);
+  if (!summary) {
+    // xkcd y similares: el texto del cómic va en el title (o alt) de la imagen
+    const tag = /<img\b[^>]*>/i.exec(body)?.[0];
+    if (tag) summary = decodeEntities(attr(tag, "title") || attr(tag, "alt")).trim();
+  }
+
   return {
     guid,
     title,
     link,
-    summary: stripHtml(body.length >= description.length ? body : description, SUMMARY_MAX),
+    summary,
     image: mediaImage(item, base) || firstImage(body, base),
     publishedAt: parseDate(date, now),
   };

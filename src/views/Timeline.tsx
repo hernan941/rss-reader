@@ -7,15 +7,15 @@ import { relTime } from "./time";
 const usefulSummary = (s: string) => (s && !/^Article URL:/i.test(s) ? s : "");
 
 export const EntryItem: FC<{ e: Entry; now: number }> = ({ e, now }) => (
-  <article class={`entry${e.is_read ? " read" : ""}${e.is_starred ? " starred" : ""}`} data-id={e.id} data-feed={e.feed_id}>
-    <button type="button" class="act star" data-act="star" aria-label="Guardar" title="Guardar (s)"><Icon name="star" /></button>
+  <article class={`entry${e.is_read ? " read" : ""}${e.is_starred ? " starred" : ""}`} data-id={e.id} data-feed={e.feed_id} data-image={e.image || undefined}>
+    <button type="button" class="act star btn btn-ghost btn-icon btn-sm" data-act="star" aria-label="Guardar" title="Guardar (s)"><Icon name="star" /></button>
     <span class="source">{e.feed_title}</span>
     <a class="entry-main" href={e.link} target="_blank" rel="noopener noreferrer">
       <span class="title">{e.title}</span>
-      {usefulSummary(e.summary) ? <span class="sum"> — {usefulSummary(e.summary)}</span> : null}
+      {usefulSummary(e.summary) ? <span class="sum">{usefulSummary(e.summary)}</span> : null}
     </a>
     <time class="when" datetime={new Date(e.sort_at).toISOString()}>{relTime(e.sort_at, now)}</time>
-    <button type="button" class="act check" data-act="read" aria-label="Marcar como leído" title="Leído / no leído (m)"><Icon name="check" /></button>
+    <button type="button" class="act check btn btn-ghost btn-icon btn-sm" data-act="read" aria-label="Marcar como leído" title="Leído / no leído (m)"><Icon name="check" /></button>
   </article>
 );
 
@@ -25,7 +25,7 @@ export const EntryList: FC<{ entries: Entry[]; next: string | null; moreHref: st
     <>
       {entries.map((e) => <EntryItem e={e} now={now} />)}
       {next ? (
-        <button type="button" class="more" data-href={`${moreHref}${moreHref.includes("?") ? "&" : "?"}before=${next}`}>
+        <button type="button" class="more btn btn-outline" data-href={`${moreHref}${moreHref.includes("?") ? "&" : "?"}before=${next}`}>
           Cargar más
         </button>
       ) : null}
@@ -46,7 +46,7 @@ interface Props {
 }
 
 export const Timeline: FC<Props> = ({ view, heading, feed, folder, hasFeeds, emptyFolder, entries, next, base }) => {
-  const here = `${base}?v=${view}`;
+  const here = view === "starred" ? `${base}?v=starred` : base;
   const hidden = (
     <>
       <input type="hidden" name="back" value={here} />
@@ -57,8 +57,6 @@ export const Timeline: FC<Props> = ({ view, heading, feed, folder, hasFeeds, emp
 
   return (
     <>
-      <div class="term">
-      <div class="term-body">
       <div class="page-head">
         <div class="titles">
           <h1>{heading}</h1>
@@ -69,20 +67,14 @@ export const Timeline: FC<Props> = ({ view, heading, feed, folder, hasFeeds, emp
           ) : null}
         </div>
         <div class="tools">
-          {view !== "starred" ? (
-            <div class="seg" role="tablist">
-              <a href={`${base}?v=unread`} class={view === "unread" ? "active" : ""} role="tab" aria-selected={view === "unread"}>Sin leer</a>
-              <a href={`${base}?v=all`} class={view === "all" ? "active" : ""} role="tab" aria-selected={view === "all"}>Todo</a>
-            </div>
-          ) : null}
           <form method="post" action="/refresh" data-busy="Actualizando…">
             <input type="hidden" name="back" value={here} />
-            <button class="ghost" type="submit" title="Buscar novedades ahora"><Icon name="refresh" /> <span>Actualizar</span></button>
+            <button class="btn btn-ghost btn-sm" type="submit" title="Buscar novedades ahora" aria-label="Actualizar"><Icon name="refresh" /> <span>Actualizar</span></button>
           </form>
           {view !== "starred" ? (
             <form method="post" action="/read-all">
               {hidden}
-              <button class="ghost" type="submit" title="Marcar todo como leído"><Icon name="check" /> <span>Marcar todo leído</span></button>
+              <button class="btn btn-ghost btn-sm" type="submit" title="Marcar todo como leído" aria-label="Marcar todo leído"><Icon name="check" /> <span>Marcar todo leído</span></button>
             </form>
           ) : null}
           {feed ? <MenuBtn head kind="feed" id={feed.id} name={feed.name} folder={feed.folder} /> : null}
@@ -90,23 +82,24 @@ export const Timeline: FC<Props> = ({ view, heading, feed, folder, hasFeeds, emp
         </div>
       </div>
 
-      {feed?.last_error ? <div class="flash err">Última actualización fallida: {feed.last_error}</div> : null}
+      {feed?.last_error ? <div class="alert alert-err">Última actualización fallida: {feed.last_error}</div> : null}
 
       <section class="list" id="list">
-        {entries.length ? <EntryList entries={entries} next={next} moreHref={here} /> : <Empty view={view} hasFeeds={hasFeeds} emptyFolder={emptyFolder} base={base} />}
+        {entries.length ? <EntryList entries={entries} next={next} moreHref={here} /> : <Empty view={view} hasFeeds={hasFeeds} emptyFolder={emptyFolder} folder={folder} />}
       </section>
-      </div>
-      </div>
     </>
   );
 };
 
-const Empty: FC<{ view: View; hasFeeds: boolean; emptyFolder: boolean; base: string }> = ({ view, hasFeeds, emptyFolder, base }) => {
+const Empty: FC<{ view: View; hasFeeds: boolean; emptyFolder: boolean; folder?: string }> = ({ view, hasFeeds, emptyFolder, folder }) => {
   if (emptyFolder) {
     return (
       <div class="empty">
         <h2>Esta carpeta está vacía</h2>
-        <p>Para agregar una fuente, pulsa ⋯ junto a ella en la barra lateral y elige “Mover a carpeta…”.</p>
+        <p>Agrega una fuente aquí, o muévela desde el menú ⋯ de cualquier fuente.</p>
+        <div class="empty-actions">
+          <button type="button" class="btn btn-primary" data-add-feed data-folder={folder}>Agregar fuente</button>
+        </div>
       </div>
     );
   }
@@ -114,15 +107,11 @@ const Empty: FC<{ view: View; hasFeeds: boolean; emptyFolder: boolean; base: str
     return (
       <div class="empty">
         <h2>Agrega tu primera fuente</h2>
-        <p>Pega la dirección de un blog o sitio en el cuadro de la izquierda y buscaré el feed por ti. También puedes importar un archivo OPML desde Feedly.</p>
-      </div>
-    );
-  }
-  if (view === "unread") {
-    return (
-      <div class="empty">
-        <h2>Todo al día</h2>
-        <p>No tienes artículos sin leer. <a href={`${base}?v=all`}>Ver todo</a></p>
+        <p>Pega la dirección de un blog o sitio y buscaré el feed por ti. También puedes importar un archivo OPML desde Feedly.</p>
+        <div class="empty-actions">
+          <button type="button" class="btn btn-primary" data-add-feed>Agregar fuente</button>
+          <button type="button" class="btn btn-secondary" data-import>Importar OPML</button>
+        </div>
       </div>
     );
   }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findFavicon, findFeedLinks, parseFeed, stripHtml } from "../src/parse";
+import { findFavicon, findFeedLinks, htmlToText, parseFeed, stripHtml } from "../src/parse";
 import { parseOpml } from "../src/opml";
 
 const NOW = Date.parse("2026-01-10T00:00:00Z");
@@ -57,7 +57,24 @@ describe("helpers", () => {
     const long = "palabra ".repeat(400);
     const feed = parseFeed(`<rss><channel><title>t</title><item><title>a</title><link>https://a.test/1</link><description>corta</description><content:encoded>${long}</content:encoded></item></channel></rss>`, "https://a.test/");
     expect(feed!.entries[0].summary.length).toBeGreaterThan(280);
-    expect(feed!.entries[0].summary.length).toBeLessThanOrEqual(1001);
+    expect(feed!.entries[0].summary.length).toBeLessThanOrEqual(1501);
+  });
+  it("htmlToText conserva párrafos y listas", () => {
+    expect(htmlToText("<p>a</p><p>b</p>")).toBe("a\n\nb");
+    expect(htmlToText("a<br>b")).toBe("a\n\nb");
+    expect(htmlToText("<ul><li>uno</li><li>dos</li></ul><p>fin</p>")).toBe("• uno\n• dos\n\nfin");
+    expect(htmlToText("<p>caf&#233; &amp; &hellip; <script>x()</script></p>")).toBe("café & …");
+    expect(htmlToText('<p>Lee <a href="x">esto</a>, y <em>aquello</em>.</p>')).toBe("Lee esto, y aquello.");
+    const t = htmlToText("<p>" + "palabra ".repeat(100) + "</p>", 20);
+    expect(t.endsWith("…")).toBe(true);
+    expect(t.length).toBeLessThanOrEqual(21);
+  });
+  it("usa el title de la imagen como resumen (xkcd)", () => {
+    const xml = `<rss><channel><title>x</title><item><title>X</title><link>https://xkcd.com/1/</link><description>&lt;img src="https://imgs.xkcd.com/comics/x.png" title="Hover text" alt="X" /&gt;</description></item></channel></rss>`;
+    expect(parseFeed(xml, "https://xkcd.com/")!.entries[0]).toMatchObject({
+      summary: "Hover text",
+      image: "https://imgs.xkcd.com/comics/x.png",
+    });
   });
   it("lee OPML anidado", () => {
     const opml = `<opml><body><outline text="Cat"><outline text="A" xmlUrl="https://a.test/rss"/></outline>

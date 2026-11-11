@@ -1,7 +1,7 @@
 import type { Discovered } from "./fetch";
 import type { ParsedEntry } from "./parse";
 
-export type View = "unread" | "all" | "starred";
+export type View = "all" | "starred";
 
 /** Una suscripción tal como la ve el usuario en la barra lateral. */
 export interface Sub {
@@ -190,8 +190,10 @@ export async function importFeeds(
 export async function saveEntries(db: D1Database, feedId: number, entries: ParsedEntry[], now = Date.now()) {
   if (!entries.length) return;
   const stmt = db.prepare(
-    `INSERT OR IGNORE INTO entries (feed_id, guid, title, link, summary, image, sort_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO entries (feed_id, guid, title, link, summary, image, sort_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(feed_id, guid) DO UPDATE SET summary = excluded.summary, image = excluded.image
+     WHERE entries.summary IS NOT excluded.summary OR entries.image IS NOT excluded.image`,
   );
   await db.batch(
     entries.map((e) => stmt.bind(feedId, e.guid, e.title, e.link, e.summary, e.image, e.publishedAt ?? now)),
@@ -216,7 +218,6 @@ export async function queryEntries(
 
   if (q.view === "starred") where.push("st.is_starred = 1");
   else where.push("s.user_id IS NOT NULL");
-  if (q.view === "unread") where.push(`${READ(h)} = 0`, `e.sort_at > ${h}`);
   if (q.feedId) {
     where.push("e.feed_id = ?");
     args.push(q.feedId);

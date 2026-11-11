@@ -3,6 +3,11 @@
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const body = document.body;
 
+  // Las transiciones (chevron, sidebar) solo se activan tras la primera interacción: nada se anima al cargar.
+  const enableAnim = () => body.classList.add("anim");
+  addEventListener("pointerdown", enableAnim, { once: true, capture: true });
+  addEventListener("keydown", enableAnim, { once: true, capture: true });
+
   // ---------- Menú móvil ----------
   $("#menu")?.addEventListener("click", () => body.classList.toggle("menu-open"));
   $("#scrim")?.addEventListener("click", () => body.classList.remove("menu-open"));
@@ -34,20 +39,12 @@
     if (e.target.files.length) e.target.form.submit();
   });
 
-  // ---------- Carpetas: recordar abiertas/cerradas ----------
-  const store = {
-    get() { try { return JSON.parse(localStorage.getItem("folders") || "{}"); } catch { return {}; } },
-    set(v) { try { localStorage.setItem("folders", JSON.stringify(v)); } catch {} },
+  // ---------- Carpetas: el estado abierto/cerrado se guarda en una cookie (lo lee el servidor) ----------
+  const saveFolders = () => {
+    const closed = $$("details.folder").filter((d) => !d.open).map((d) => d.dataset.folder);
+    document.cookie = `folders_closed=${encodeURIComponent(JSON.stringify(closed))}; path=/; max-age=31536000; samesite=lax`;
   };
-  const closed = store.get();
-  $$("details.folder").forEach((d) => {
-    if (closed[d.dataset.folder] && !$(".row.active", d) && !d.querySelector("summary.active")) d.open = false;
-    d.addEventListener("toggle", () => {
-      const s = store.get();
-      if (d.open) delete s[d.dataset.folder]; else s[d.dataset.folder] = 1;
-      store.set(s);
-    });
-  });
+  $$("details.folder").forEach((d) => d.addEventListener("toggle", saveFolders));
 
   // ---------- Contadores ----------
   const bump = (entry, delta) => {
@@ -104,12 +101,43 @@
 
   function renderPreview() {
     const link = shown.querySelector(".entry-main").getAttribute("href");
-    const summary = ($(".sum", shown)?.textContent ?? "").replace(/^\s*—\s*/, "");
+    const summary = ($(".sum", shown)?.textContent ?? "").trim();
+    const image = shown.dataset.image || "";
     $("#preview-source").textContent = $(".source", shown).textContent;
     $("#preview-when").textContent = $(".when", shown).textContent;
     $("#preview-title").textContent = $(".title", shown).textContent;
+
+    // Imagen principal (p. ej. tiras de cómic): completa, sin recortar; si falla, se quita.
+    const media = $("#preview-media");
+    media.replaceChildren();
+    if (image) {
+      const img = document.createElement("img");
+      img.className = "preview-img";
+      img.referrerPolicy = "no-referrer";
+      img.loading = "eager";
+      img.alt = $(".title", shown).textContent;
+      img.addEventListener("error", () => img.remove());
+      img.src = image;
+      media.append(img);
+    }
+
+    // Resumen: "\n\n" separa párrafos y "\n" es salto de línea. Solo DOM/textContent (texto no confiable).
     const text = $("#preview-summary");
-    text.textContent = summary || "Este artículo no trae resumen en su feed.";
+    text.replaceChildren();
+    if (summary) {
+      for (const para of summary.split(/\n{2,}/)) {
+        const p = document.createElement("p");
+        para.split("\n").forEach((line, i) => {
+          if (i) p.append(document.createElement("br"));
+          p.append(document.createTextNode(line));
+        });
+        text.append(p);
+      }
+    } else if (!image) {
+      const p = document.createElement("p");
+      p.textContent = "Este artículo no trae resumen en su feed.";
+      text.append(p);
+    }
     text.classList.toggle("none", !summary);
     $(".drawer-body", preview).scrollTop = 0;
     const open = $("#preview-link");
@@ -167,33 +195,110 @@
     f.submit();
   }
 
+  // ---------- Diálogos ----------
   const dlg = $("#dlg");
-  const ask = (label, value = "") =>
+  const folderNames = () => $$("#add-feed-folder option").map((o) => o.value).filter(Boolean);
+
+  // Diálogo genérico. Con `choices` muestra un <select> (sin carpeta / existentes / nueva…).
+  const ask = (title, label, value = "", choices = null) =>
     new Promise((resolve) => {
+      const input = $("#dlg-input"), sel = $("#dlg-select");
+      $("#dlg-title").textContent = title;
       $("#dlg-label").textContent = label;
-      const input = $("#dlg-input");
-      input.value = value;
+      input.value = choices ? "" : value;
+      sel.hidden = !choices;
+      $("#dlg-label").htmlFor = choices ? "dlg-select" : "dlg-input";
+      const sync = () => {
+        input.hidden = !!choices && sel.value !== "__new__";
+        input.required = !input.hidden;
+        if (choices && !input.hidden) input.focus();
+      };
+      if (choices) {
+        sel.replaceChildren();
+        const opts = [["", "Sin carpeta"], ...choices.map((n) => [n, n]), ["__new__", "Nueva carpeta…"]];
+        for (const [v, t] of opts) sel.append(new Option(t, v));
+        sel.value = choices.includes(value) ? value : "";
+        sel.onchange = sync;
+      }
+      sync();
       dlg.returnValue = "";
-      dlg.addEventListener("close", () => resolve(dlg.returnValue === "ok" ? input.value : null), { once: true });
+      dlg.addEventListener("close", () => {
+        if (dlg.returnValue !== "ok") return resolve(null);
+        resolve(choices && sel.value !== "__new__" ? sel.value : input.value);
+      }, { once: true });
       dlg.showModal();
-      input.select();
+      (choices ? sel : input).focus();
+      if (!choices) input.select();
     });
   $("#dlg-cancel")?.addEventListener("click", () => dlg.close("cancel"));
 
-  $("#new-folder")?.addEventListener("click", async () => {
-    const name = await ask("Nombre de la nueva carpeta");
-    if (name?.trim()) postForm("/folders", { name, back: here() });
+  // Cerrar con "Cancelar" o haciendo clic fuera de cualquier .dialog
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("[data-close]")) return e.target.closest("dialog").close();
+    if (e.target.matches?.("dialog.dialog")) e.target.close("cancel");
+  });
+
+  function openAddFeed(folder = "") {
+    closeMenu();
+    const d = $("#add-feed");
+    $("input[name=back]", d).value = here();
+    $("#add-feed-url").value = "";
+    const sel = $("#add-feed-folder");
+    sel.value = folder;
+    if (sel.value !== folder) sel.value = "";
+    const btn = $("button[type=submit]", d);
+    btn.disabled = false;
+    $("span", btn).textContent = "Agregar";
+    d.showModal();
+    $("#add-feed-url").focus();
+  }
+  function openAddFolder() {
+    closeMenu();
+    const d = $("#add-folder");
+    $("input[name=back]", d).value = here();
+    $("#add-folder-name").value = "";
+    d.showModal();
+    $("#add-folder-name").focus();
+  }
+  function importOpml() {
+    closeMenu();
+    $("#opml-form input[type=file]")?.click();
+  }
+  function exportOpml() {
+    const a = document.createElement("a");
+    a.href = "/opml";
+    a.download = "feeds.opml";
+    body.append(a);
+    a.click();
+    a.remove();
+  }
+
+  document.addEventListener("click", (e) => {
+    const add = e.target.closest("[data-add-feed]");
+    if (add) return openAddFeed(add.dataset.folder || "");
+    if (e.target.closest("[data-import]")) importOpml();
   });
 
   const ACTIONS = {
+    add: () => [
+      ["Fuente", () => openAddFeed()],
+      ["Carpeta", () => openAddFolder()],
+    ],
+    account: (d) => [
+      ["Importar OPML…", importOpml],
+      ["Exportar OPML", exportOpml],
+      ...(d.admin ? [["Administración", () => { location.href = "/admin"; }]] : []),
+      null,
+      ["Cerrar sesión", () => postForm("/logout")],
+    ],
     feed: (d) => [
       ["Marcar como leído", () => postForm("/read-all", { feed: d.id, back: here() })],
       ["Renombrar…", async () => {
-        const name = await ask("Nombre de la fuente", d.name);
+        const name = await ask("Renombrar fuente", "Nombre", d.name);
         if (name !== null) postForm(`/feeds/${d.id}/rename`, { name, back: here() });
       }],
       ["Mover a carpeta…", async () => {
-        const folder = await ask("Carpeta: elige una o escribe una nueva (vacío = sin carpeta)", d.folder);
+        const folder = await ask("Mover a carpeta", "Carpeta", d.folder, folderNames());
         if (folder !== null) postForm(`/feeds/${d.id}/folder`, { folder, back: here() });
       }],
       null,
@@ -204,7 +309,7 @@
     folder: (d) => [
       ["Marcar carpeta como leída", () => postForm("/read-all", { folder: d.name, back: here() })],
       ["Renombrar carpeta…", async () => {
-        const to = await ask("Nombre de la carpeta", d.name);
+        const to = await ask("Renombrar carpeta", "Nombre", d.name);
         if (to) postForm("/folders/rename", { from: d.name, to });
       }],
       null,
@@ -238,15 +343,23 @@
       b.addEventListener("click", () => { closeMenu(); item[1](); });
       menu.append(b);
     }
-    body.append(menu);
     const r = btn.getBoundingClientRect();
+    const account = btn.dataset.kind === "account";
+    if (account) menu.style.minWidth = r.width + "px";
+    body.append(menu);
     const w = menu.offsetWidth, h = menu.offsetHeight;
-    menu.style.left = Math.max(8, Math.min(r.right - w, innerWidth - w - 8)) + "px";
+    const x = account ? r.left : r.right - w;
+    menu.style.left = Math.max(8, Math.min(x, innerWidth - w - 8)) + "px";
     menu.style.top = (r.bottom + h + 8 > innerHeight ? Math.max(8, r.top - h - 4) : r.bottom + 4) + "px";
     $("button", menu)?.focus();
   }
 
   document.addEventListener("click", (e) => {
+    const plus = e.target.closest(".row-add");
+    if (plus) {
+      e.preventDefault(); e.stopPropagation(); // dentro de <summary> no debe plegar la carpeta
+      return openAddFeed(plus.dataset.folder);
+    }
     const btn = e.target.closest(".row-menu");
     if (btn) {
       e.preventDefault(); e.stopPropagation(); // dentro de <summary> no debe plegar la carpeta
@@ -254,7 +367,15 @@
     }
     if (menu && !e.target.closest(".menu")) closeMenu();
   }, true);
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeMenu();
+    if (menu && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+      e.preventDefault();
+      const items = $$("button", menu);
+      const i = items.indexOf(document.activeElement);
+      items[(i + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length].focus();
+    }
+  });
   addEventListener("resize", closeMenu);
   $("#sidebar")?.addEventListener("scroll", closeMenu);
   $(".feeds")?.addEventListener("scroll", closeMenu);
@@ -269,7 +390,7 @@
     el.scrollIntoView({ block: "center", behavior: "smooth" });
   }
   document.addEventListener("keydown", (e) => {
-    if (e.metaKey || e.ctrlKey || e.altKey || dlg?.open || /input|textarea/i.test(e.target.tagName)) return;
+    if (e.metaKey || e.ctrlKey || e.altKey || $("dialog.dialog[open]") || /input|textarea|select/i.test(e.target.tagName)) return;
     const list = $$(".entry");
     const i = current ? list.indexOf(current) : -1;
     if (preview?.open) {
@@ -287,7 +408,7 @@
       case "v": if (current) { setRead(current, true); window.open($(".entry-main", current).href, "_blank", "noopener"); } break;
       case "s": if (current) toggleStar(current); break;
       case "m": if (current) setRead(current, !current.classList.contains("read")); break;
-      case "/": e.preventDefault(); $(".add input[name=url]")?.focus(); break;
+      case "/": e.preventDefault(); openAddFeed(); break;
     }
   });
 })();

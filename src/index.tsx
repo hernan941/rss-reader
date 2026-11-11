@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { getCookie } from "hono/cookie";
 import { secureHeaders } from "hono/secure-headers";
 import {
   deleteUser, getUserEmail, isAdmin, kickUser, listUsers, registrationState, setDisabled, setMaxUsers,
@@ -26,7 +27,7 @@ type App = { Bindings: Env; Variables: { user: User } };
 const app = new Hono<App>();
 
 const MIN = 60_000;
-const parseView = (v: string | undefined): View => (v === "all" || v === "starred" ? v : "unread");
+const parseView = (v: string | undefined): View => (v === "starred" ? "starred" : "all");
 const ip = (c: any) => c.req.header("cf-connecting-ip") ?? "local";
 const enc = encodeURIComponent;
 
@@ -194,9 +195,14 @@ async function renderTimeline(c: any, scope: { feedId?: number; folder?: string 
     return c.redirect("/");
   }
 
-  const heading = feed ? feed.name : scope.folder !== undefined ? scope.folder : view === "unread" ? "Sin leer" : view === "starred" ? "Guardados" : "Todo";
+  const heading = feed ? feed.name : scope.folder !== undefined ? scope.folder : view === "starred" ? "Guardados" : "Todo";
+  let closedFolders: string[] = [];
+  try {
+    const parsed = JSON.parse(getCookie(c, "folders_closed") ?? "[]"); // Hono ya decodifica el valor una vez
+    if (Array.isArray(parsed)) closedFolders = parsed.filter((x) => typeof x === "string").slice(0, 200);
+  } catch {}
   return c.html(
-    <Layout user={user} admin={isAdmin(user.email, c.env)} subs={subs} folders={folders} starred={starred} view={view} feedId={scope.feedId} folder={scope.folder} title={heading} msg={c.req.query("msg")} err={c.req.query("err")}>
+    <Layout closedFolders={closedFolders} user={user} admin={isAdmin(user.email, c.env)} subs={subs} folders={folders} starred={starred} view={view} feedId={scope.feedId} folder={scope.folder} title={heading} msg={c.req.query("msg")} err={c.req.query("err")}>
       <Timeline view={view} heading={heading} feed={feed} folder={scope.folder} hasFeeds={subs.length > 0} emptyFolder={scope.folder !== undefined && !folderHasFeeds} entries={page.entries} next={page.next} base={base} />
     </Layout>,
   );
@@ -217,13 +223,15 @@ app.post("/feeds", async (c) => {
     }
     const found = await discoverFeed(String(body.url ?? ""));
     const { id, existed, isNewFeed } = await subscribe(c.env.DB, user.id, found);
-    if (existed) return c.redirect(`/feed/${id}?v=all&msg=${enc("Ya sigues esta fuente")}`);
+    const folder = cleanFolder(body.folder);
+    if (!existed && folder) await moveSub(c.env.DB, user.id, id, folder);
+    if (existed) return c.redirect(`/feed/${id}?msg=${enc("Ya sigues esta fuente")}`);
     if (isNewFeed) {
       await saveEntries(c.env.DB, id, found.parsed.entries);
       c.executionCtx.waitUntil(backfillFavicons(c.env.DB, 1, user.id));
     }
     const name = found.parsed.title || new URL(found.feedUrl).hostname;
-    return c.redirect(`/feed/${id}?v=all&msg=${enc(`Agregado: ${name}`)}`);
+    return c.redirect(`/feed/${id}?msg=${enc(`Agregado: ${name}`)}`);
   } catch (e) {
     return c.redirect(withParam(safeBack(body.back), "err", (e as Error).message));
   }
@@ -254,7 +262,7 @@ app.post("/folders", async (c) => {
   if (!(await createFolder(c.env.DB, c.get("user").id, name))) {
     return c.redirect(withParam(back, "err", "Llegaste al máximo de carpetas"));
   }
-  return c.redirect(`/folder/${enc(name)}?v=all`);
+  return c.redirect(`/folder/${enc(name)}`);
 });
 
 app.post("/folders/delete", async (c) => {
@@ -267,7 +275,7 @@ app.post("/folders/rename", async (c) => {
   const body = await c.req.parseBody();
   const to = cleanFolder(body.to);
   await renameFolder(c.env.DB, c.get("user").id, String(body.from ?? ""), to);
-  return c.redirect(to ? `/folder/${enc(to)}?v=unread` : "/");
+  return c.redirect(to ? `/folder/${enc(to)}` : "/");
 });
 
 // ---------- Artículos ----------
@@ -308,7 +316,7 @@ app.post("/opml", async (c) => {
   const n = await importFeeds(c.env.DB, c.get("user").id, feeds);
   // Las primeras se descargan ya; el resto lo hace el cron en lotes.
   c.executionCtx.waitUntil(refreshDue(c.env.DB, 0, c.get("user").id));
-  return c.redirect(`/?v=all&msg=${enc(`Importadas ${n} fuentes. Los artículos irán apareciendo en unos minutos.`)}`);
+  return c.redirect(`/?msg=${enc(`Importadas ${n} fuentes. Los artículos irán apareciendo en unos minutos.`)}`);
 });
 
 app.get("/opml", async (c) =>

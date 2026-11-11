@@ -9,11 +9,11 @@ Corre en Cloudflare, normalmente dentro del plan gratuito:
 
 - **Cuentas:** registro e inicio de sesión con correo y contraseña.
 - **Panel `/admin`:** ver usuarios y quién está en línea, expulsarlos, suspenderlos o eliminarlos, y abrir/cerrar el registro (o ponerle un límite de usuarios).
-- **Agregar fuentes:** pega la URL de un sitio o de un feed; detecta el feed automáticamente.
-- **Lista densa** (una fila por artículo) con lo último de todas tus fuentes: *Sin leer / Todo / Guardados*.
+- **Agregar fuentes:** botón **+** junto a "Fuentes" (elige Fuente o Carpeta, se abre un modal) y **+** en cada carpeta para agregar una fuente directamente ahí. Pega la URL de un sitio o de un feed; detecta el feed automáticamente.
+- **Lista densa** (una fila por artículo) con lo último de todas tus fuentes: *Todo / Guardados*.
 - **Barra lateral con acciones:** el botón `⋯` de cada fuente y carpeta (y de la cabecera) abre un menú: marcar como leído, renombrar, mover a carpeta, dejar de seguir.
 - **Favicons** en la barra lateral: se guarda solo el enlace, no la imagen; si falla, se muestra la inicial.
-- **Carpetas** para agrupar fuentes: créalas con **+ Carpeta**, y elimínalas desde su menú `⋯` sin perder las fuentes.
+- **Carpetas** para agrupar fuentes: créalas con el botón **+** junto a "Fuentes", y elimínalas desde su menú `⋯` sin perder las fuentes.
 - **Vista previa:** al hacer clic en un artículo se abre un panel con su resumen, para decidir si leerlo completo. Ctrl/Cmd+clic abre el original directamente.
 - **Guardar** artículos con la estrella; **marcar leído** al abrirlos (o a mano).
 - **Importar / exportar OPML** (con carpetas), para traer tus feeds desde Feedly.
@@ -79,8 +79,7 @@ npx wrangler secret put INVITE_CODE
   sus propias suscripciones, nombres, carpetas, y estado de leído/guardado.
 - **Cron:** cada 15 min revisa los feeds menos recientes (solo los que tienen suscriptores), en lotes de 40 para
   respetar el límite de peticiones salientes del plan gratuito. Usa `ETag`/`Last-Modified`.
-- **"Sin leer" cubre los últimos 14 días:** lo más antiguo cuenta como leído. Mantiene las consultas baratas
-  (D1 cobra por filas leídas). Los guardados no caducan.
+- **El estado de leído cubre los últimos 14 días:** lo más antiguo cuenta como leído (y no suma a los contadores). Mantiene las consultas baratas (D1 cobra por filas leídas). Los guardados no caducan.
 - **Tope de 300 fuentes por usuario** (`MAX_FEEDS_PER_USER` en `src/db.ts`).
 
 ## Seguridad

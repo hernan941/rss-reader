@@ -37,14 +37,12 @@ export const AdminPage: FC<Props> = ({ me, users, admins, reg, stats, msg, err }
           <main class="admin">
             <header class="admin-head">
               <h1 class="brand"><span class="prompt">$</span> sudo admin<span class="cursor">_</span></h1>
-              <a class="ghost" href="/">← Volver al lector</a>
+              <a class="btn btn-ghost btn-sm" href="/">← Volver al lector</a>
             </header>
 
-            {msg ? <div class="flash ok" role="status">{msg}</div> : null}
-            {err ? <div class="flash err" role="alert">{err}</div> : null}
+            {msg ? <div class="alert alert-ok" role="status">{msg}</div> : null}
+            {err ? <div class="alert alert-err" role="alert">{err}</div> : null}
 
-            <div class="term">
-            <div class="term-body">
             <div class="stats">
               <div><b>{users.length}</b><span>usuarios</span></div>
               <div><b>{online}</b><span>en línea</span></div>
@@ -59,20 +57,20 @@ export const AdminPage: FC<Props> = ({ me, users, admins, reg, stats, msg, err }
                 {reg.open ? (
                   <form method="post" action="/admin/registration">
                     <input type="hidden" name="open" value="0" />
-                    <button class="btn" type="submit">Cerrar registro</button>
+                    <button class="btn btn-outline btn-sm" type="submit">Cerrar registro</button>
                   </form>
                 ) : reg.reason === "manual" ? (
                   <form method="post" action="/admin/registration">
                     <input type="hidden" name="open" value="1" />
-                    <button class="btn primary" type="submit">Abrir registro</button>
+                    <button class="btn btn-primary btn-sm" type="submit">Abrir registro</button>
                   </form>
                 ) : null}
                 <form method="post" action="/admin/max-users" class="inline">
-                  <label>
-                    Límite de usuarios
-                    <input type="number" name="max" min="0" max="100000" value={String(reg.max)} />
-                  </label>
-                  <button class="btn" type="submit">Guardar</button>
+                  <div class="field">
+                    <label class="label" for="max">Límite de usuarios</label>
+                    <input class="input" id="max" type="number" name="max" min="0" max="100000" value={String(reg.max)} />
+                  </div>
+                  <button class="btn btn-secondary" type="submit">Guardar</button>
                 </form>
               </div>
               <p class="hint">Con un límite, el registro se cierra solo al alcanzarlo; para abrirlo de nuevo sube el límite o ponlo en 0 (sin límite).</p>
@@ -110,13 +108,13 @@ export const AdminPage: FC<Props> = ({ me, users, admins, reg, stats, msg, err }
                             ) : (
                               <>
                                 <form method="post" action={`/admin/users/${u.id}/kick`}>
-                                  <button class="ghost" type="submit" disabled={u.sessions === 0} title="Cierra sus sesiones; podrá volver a entrar">Expulsar</button>
+                                  <button class="btn btn-ghost btn-sm" type="submit" disabled={u.sessions === 0} title="Cierra sus sesiones; podrá volver a entrar">Expulsar</button>
                                 </form>
                                 <form method="post" action={`/admin/users/${u.id}/${u.disabled ? "enable" : "suspend"}`}>
-                                  <button class="ghost" type="submit" title={u.disabled ? "Permitirle entrar de nuevo" : "Cierra sus sesiones e impide que vuelva a entrar"}>{u.disabled ? "Reactivar" : "Suspender"}</button>
+                                  <button class={`btn btn-sm ${u.disabled ? "btn-ghost" : "btn-destructive"}`} type="submit" title={u.disabled ? "Permitirle entrar de nuevo" : "Cierra sus sesiones e impide que vuelva a entrar"}>{u.disabled ? "Reactivar" : "Suspender"}</button>
                                 </form>
                                 <form method="post" action={`/admin/users/${u.id}/delete`} data-confirm={`¿Eliminar a ${u.email} y todos sus datos? No se puede deshacer.`}>
-                                  <button class="ghost danger" type="submit">Eliminar</button>
+                                  <button class="btn btn-destructive btn-sm" type="submit">Eliminar</button>
                                 </form>
                               </>
                             )}
@@ -130,8 +128,6 @@ export const AdminPage: FC<Props> = ({ me, users, admins, reg, stats, msg, err }
               </div>
               <p class="hint">“En línea” = sesión activa y actividad en los últimos 10 minutos. Los administradores se definen en <code>ADMIN_EMAILS</code>.</p>
             </section>
-            </div>
-            </div>
           </main>
         </body>
       </html>
