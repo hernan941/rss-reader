@@ -9,66 +9,32 @@ body:
         Cada issue debe poder resolverse en **un solo PR pequeño** (idealmente menos de 5 archivos).
         Si necesita más, divídelo. Un issue ambiguo cuesta créditos de agente en iteraciones perdidas.
   - type: textarea
-    id: contexto
+    id: issue
     attributes:
-      label: Contexto
-      description: Por qué se necesita y qué hay hoy en el código (menciona archivos o funciones concretas).
-    validations:
-      required: true
-  - type: textarea
-    id: que
-    attributes:
-      label: Qué hay que hacer
-      description: Descripción concreta y sin ambigüedad del cambio. Si hay una decisión de diseño, tómala aquí.
-    validations:
-      required: true
-  - type: textarea
-    id: test-primero
-    attributes:
-      label: Test que debe fallar primero
-      description: El test que fallará contra el código actual (archivo, caso y entrada concreta), agregado en un commit `test:` antes de la implementación. Escribe "No aplica" si el cambio es solo de UI/CSS, documentación o solo tests.
-      placeholder: |
-        - test/title.test.ts: pageTitle("Todo", 12) devuelve "(12) Todo · Lector RSS"
-    validations:
-      required: false
-  - type: textarea
-    id: criterios
-    attributes:
-      label: Criterios de aceptación
-      description: Lista de comprobaciones verificables, una por línea, con el formato `- [ ] ...`.
+      label: Issue
+      description: Completa cada sección, o borra todo y pega el issue completo (por ejemplo, uno escrito con Claude).
       value: |
+        ## Contexto
+        _Por qué se necesita y qué hay hoy en el código (menciona archivos o funciones concretas)._
+
+        ## Qué hay que hacer
+        _Descripción concreta y sin ambigüedad del cambio. Si hay una decisión de diseño, tómala aquí._
+
+        ## Test que debe fallar primero
+        _El test que fallará contra el código actual (archivo, caso y entrada concreta), agregado en un commit `test:` antes de la implementación; o 'No aplica' si es solo UI/CSS, docs o tests._
+
+        ## Criterios de aceptación
         - [ ] 
         - [ ] `npm run typecheck` pasa
         - [ ] `npm test` pasa
-    validations:
-      required: true
-  - type: textarea
-    id: archivos
-    attributes:
-      label: Archivos probables
-      description: Archivos que probablemente hay que tocar o crear.
-      placeholder: |
-        - src/views/time.ts
-        - test/time.test.ts
-    validations:
-      required: true
-  - type: textarea
-    id: fuera
-    attributes:
-      label: Fuera de alcance
-      description: Lo que el agente NO debe tocar ni "aprovechar para mejorar".
-      placeholder: |
-        - No agregar dependencias
-        - No cambiar migraciones ni wrangler.jsonc
-    validations:
-      required: true
-  - type: textarea
-    id: verificar
-    attributes:
-      label: Cómo verificar
-      description: Comandos y comportamiento esperado para comprobar que está bien hecho.
-      placeholder: |
-        - `npm run typecheck && npm test`
-        - Qué debería verse o devolverse
+
+        ## Archivos probables
+        _Archivos que probablemente hay que tocar o crear._
+
+        ## Fuera de alcance
+        _Lo que el agente NO debe tocar ni "aprovechar para mejorar"._
+
+        ## Cómo verificar
+        _Comandos y comportamiento esperado para comprobar que está bien hecho._
     validations:
       required: true
