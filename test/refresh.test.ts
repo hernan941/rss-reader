@@ -73,7 +73,7 @@ function refreshDb() {
         return stmt;
       },
       async all() {
-        if (sql.includes("FROM feeds f")) {
+        if (sql.includes("FROM feeds f") && sql.includes("f.retry_after <= ?")) {
           dueSql = sql;
           dueArgs = args;
           return { results: [] };
@@ -116,7 +116,19 @@ describe("refreshFeed", () => {
     vi.stubGlobal("fetch", async () => new Response(null, { status: 304 }));
     const fake = refreshDb();
     await refreshFeed(fake.db, { id: 1, url: "https://a.test/feed", etag: "tag", last_modified: "" }, 1_000);
-    expect(fake.updates[0].args).toEqual([1_000, "", 0, 1]);
+    expect(fake.updates[0].sql).toContain("retry_after = 0");
+    expect(fake.updates[0].args).toEqual([1_000, 1]);
+  });
+
+  it("una respuesta 200 limpia retry_after", async () => {
+    vi.stubGlobal("fetch", async () =>
+      new Response(`<?xml version="1.0"?><rss version="2.0"><channel><title>A</title><link>https://a.test/</link><description>A</description></channel></rss>`, {
+        status: 200,
+      }),
+    );
+    const fake = refreshDb();
+    await refreshFeed(fake.db, { id: 1, url: "https://a.test/feed", etag: "", last_modified: "" }, 1_000);
+    expect(fake.updates[0].sql).toContain("retry_after = 0");
   });
 
   it("conserva el error sin retry_after para fallos distintos", async () => {
