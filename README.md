@@ -39,6 +39,9 @@ npm run db:remote                         # aplica las migraciones
 npm run deploy
 ```
 
+Tras esta configuración inicial, cada merge a `master` aplica las migraciones nuevas y despliega solo mediante
+GitHub Actions (`.github/workflows/deploy.yml`); no hace falta correr `db:remote` ni `deploy` a mano.
+
 ### Administradores
 
 El acceso a `/admin` lo da la variable `ADMIN_EMAILS` (correos separados por comas). Sin ella **nadie** es admin

@@ -13,12 +13,12 @@ issue (plantilla) ──> asignar a Copilot ──> PR del agente ──> CI `ch
 2. **Asignación.** Se asigna el issue a **Copilot**. El agente lee `.github/copilot-instructions.md`, prepara su entorno con `.github/workflows/copilot-setup-steps.yml`, trabaja en una rama `copilot/...` y abre un PR (borrador).
 3. **TDD.** Bugs y funcionalidades con lógica llevan primero un commit `test:` con tests que fallan y después el commit `feat:`/`fix:` que los pasa (sin squash); el PR cita el fallo original. No aplica a UI/CSS, docs ni issues solo de tests ("TDD: no aplica (motivo)"). Detalle en `.github/copilot-instructions.md`.
 4. **Verificación del agente.** Antes de abrir el PR debe haber corrido `npm run typecheck` y `npm test` (lo exigen las instrucciones).
-5. **CI.** `.github/workflows/ci.yml` corre el job `check` (typecheck + test). Los workflows de un PR del agente pueden requerir que un humano pulse "Approve and run workflows".
+5. **CI.** `.github/workflows/ci.yml` corre el job `check` (typecheck + test y, en PRs, `scripts/check-migrations.mjs`: rechaza editar/borrar migraciones existentes, numeración inválida y SQL destructivo salvo la etiqueta `migracion-destructiva`). Los workflows de un PR del agente pueden requerir que un humano pulse "Approve and run workflows".
 6. **Revisión.** La persona lee el diff contra los criterios de aceptación del issue. Cambios pedidos como comentarios en el PR (cada ronda cuesta créditos, ver abajo).
-7. **Merge.** Con `check` verde y 1 aprobación. Si el PR agrega una migración, **aplicarla antes** (`npm run db:remote`).
-8. **Deploy.** `.github/workflows/deploy.yml` corre al hacer push a master: repite typecheck y test y ejecuta `npm run deploy`.
+7. **Merge.** Con `check` verde y 1 aprobación. Si el PR agrega una migración, revisar su SQL: se aplicará sola al hacer merge.
+8. **Deploy.** `.github/workflows/deploy.yml` corre al hacer push a master: repite typecheck y test, aplica las migraciones nuevas de D1 (`wrangler d1 migrations apply DB --remote`) y ejecuta `npm run deploy`. Si la migración falla, no se despliega.
 
-Regla de oro: el agente y la CI **nunca** aplican migraciones remotas. Eso siempre es manual.
+Regla de oro: el agente **nunca** aplica migraciones remotas; solo las aplica el deploy al hacer merge, por lo que deben ser aditivas y retrocompatibles.
 
 ## Configuración manual (una sola vez)
 
@@ -33,7 +33,7 @@ Pasos para la persona dueña del repositorio. Nada de esto lo puede hacer el age
    - Requerir pull request antes de hacer merge, con **1 aprobación**.
    - Requerir el estado `check` (el job de `ci.yml`) y que la rama esté al día.
    - Bloquear force-push y borrado.
-5. **Etiquetas**: crear `feature`, `bug`, `copilot` y `calibracion`.
+5. **Etiquetas**: crear `feature`, `bug`, `copilot`, `calibracion` y `migracion-destructiva` (al ponerla en un PR, la CI permite SQL destructivo; usarla solo con intención y revisión explícita).
 6. **Probar el entorno del agente**: Actions > "Copilot Setup Steps" > Run workflow. Debe terminar en verde. Si falla, el agente trabajará sin dependencias y gastará créditos en vano.
 7. **Probar el despliegue**: Actions > Deploy > Run workflow, una vez, con la rama master.
 
@@ -53,6 +53,8 @@ Copilot Student da unos 200 créditos de IA al mes. Cada PR del agente y cada ro
 
 Issues del mes posibles ≈ `120 / créditos_por_issue_pequeño`. Recalcular tras los primeros tres.
 
+**Primera medición (issue #1, bug pequeño):** 2 créditos el primer intento y 1 por ronda de corrección. A ese ritmo el presupuesto no es el límite (~60 issues pequeños con una ronda cada uno); el cuello de botella es el tiempo de revisión humana.
+
 **Reglas para no desperdiciar créditos:**
 
 - Un issue = un PR pequeño. Si necesita más de ~5 archivos, dividirlo.
@@ -66,10 +68,10 @@ Issues del mes posibles ≈ `120 / créditos_por_issue_pequeño`. Recalcular tra
 
 Una fila por issue entregado, en una hoja o en este mismo archivo:
 
-| Issue | Tipo | Créditos | Rondas | CI verde al 1er intento | Mergeado sin código humano | TDD respetado | Regresión |
-|---|---|---|---|---|---|---|---|
-| #0 relTime | test | | | | | | |
-| | | | | | | | |
+| Issue | Tipo | Claridad | Créditos | Rondas | CI verde al 1er intento | Mergeado sin código humano | TDD respetado | Supuestos documentados | Regresión en revisión | Regresión en producción |
+|---|---|---|---|---|---|---|---|---|---|---|
+| #1 URL del feed como título (PR #2) | bug | 50 % | 3 (2 + 1 ronda) | 1 | sí | sí | sí (2 de 2) | no (dejó "Ninguno" aun pidiéndoselo) | sí: descartaba entradas solo con título; corregida en ronda 1 | |
+| #0 relTime | test | 100 % | | | | | | | | |
 
 - **Tipo:** `test`, `feature`, `bug`, `docs`, `dificil`.
 - **Créditos:** consumo medido en github.com/settings/copilot (antes y después).
@@ -77,7 +79,10 @@ Una fila por issue entregado, en una hoja o en este mismo archivo:
 - **CI verde al 1er intento:** el `check` del primer commit del agente pasó.
 - **Mergeado sin código humano:** nadie escribió código a mano en el PR (los comentarios no cuentan).
 - **TDD respetado:** hay un commit `test:` previo con el fallo citado en el PR, o el PR declara "TDD: no aplica (motivo)" con un motivo válido (sí/no/n.a.).
-- **Regresión:** algo roto en producción atribuible al PR (sí/no, y cuál).
+- **Claridad:** qué tan completo estaba el issue (100 % = causa, casos y fuera de alcance explícitos; 50 % = solo el síntoma).
+- **Supuestos documentados:** el PR lista en "Supuestos" lo que eligió sin que el issue lo dijera.
+- **Regresión en revisión:** algo que antes funcionaba y el PR rompía, detectado antes del merge (sí/no, y cuál).
+- **Regresión en producción:** algo roto en producción atribuible al PR (sí/no, y cuál).
 
 ## Criterio de éxito para pasar a la fase 2
 

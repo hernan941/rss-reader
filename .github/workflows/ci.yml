@@ -4,6 +4,7 @@ name: CI
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   push:
     branches: [master]
 
@@ -20,6 +21,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          # En PRs hace falta el historial para comparar migraciones con la rama base.
+          fetch-depth: ${{ github.event_name == 'pull_request' && 0 || 1 }}
 
       - uses: actions/setup-node@v4
         with:
@@ -29,3 +33,9 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+
+      - name: Revisar migraciones
+        if: github.event_name == 'pull_request'
+        run: node scripts/check-migrations.mjs origin/${{ github.base_ref }}
+        env:
+          ALLOW_DESTRUCTIVE: ${{ contains(github.event.pull_request.labels.*.name, 'migracion-destructiva') && '1' || '0' }}

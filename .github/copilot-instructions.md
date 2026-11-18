@@ -90,8 +90,9 @@ Lee el comentario inicial de `public/app.css` antes de tocar la interfaz. Resume
 ## Base de datos
 
 - Un cambio de esquema es **un archivo nuevo** `migrations/NNNN_descripcion.sql` con el siguiente número. **Nunca edites migraciones existentes.**
-- **Nunca** apliques migraciones en remoto (`db:remote`) ni ejecutes `wrangler` contra Cloudflare. La persona responsable las aplica a mano antes del merge. Menciónalo en el PR si agregas una.
-- El esquema debe ser retrocompatible con el código desplegado (agregar, no renombrar ni borrar).
+- Las migraciones se aplican **automáticamente al hacer merge del PR** (antes del despliegue). Por eso deben ser aditivas y retrocompatibles: el código nuevo **y** el código ya desplegado deben funcionar con el esquema nuevo (agregar columnas/tablas con default o nulables; no renombrar ni borrar).
+- La CI rechaza editar o borrar migraciones existentes y el SQL destructivo (`DROP`, `DELETE`, `RENAME`, `TRUNCATE`).
+- **Nunca** apliques migraciones en remoto (`db:remote`) ni ejecutes `wrangler` contra Cloudflare. Menciona la migración en el PR para que la persona revise el SQL.
 
 ## Prohibido salvo que el issue lo diga expresamente
 
