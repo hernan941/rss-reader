@@ -156,8 +156,9 @@ function buildEntry(item: Node, base: string, now: number, atom: boolean): Parse
   const link = atom ? atomLink(item.link, base) : rawLink ? absolute(rawLink, base) : "";
   const body = text(item["content:encoded"]) || text(item.content) || text(item.description) || text(item.summary);
   const description = text(item.description) || text(item.summary);
-  const title = stripHtml(text(item.title), 300) || "Sin título";
-  const guid = text(item.guid) || text(item.id) || link;
+  const originalTitle = stripHtml(text(item.title), 300);
+  const title = originalTitle || "Sin título";
+  const guid = text(item.guid) || text(item.id) || link || originalTitle;
   if (!guid) return null;
 
   const date =
