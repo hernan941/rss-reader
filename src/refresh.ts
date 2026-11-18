@@ -4,6 +4,7 @@ import { parseFeed } from "./parse";
 
 // El plan gratis de Workers permite ~50 peticiones salientes por ejecución.
 const MAX_PER_RUN = 40;
+const CONCURRENCY = 8;
 // Los favicons usan solo lo que sobra del presupuesto de peticiones.
 const REQUEST_BUDGET = 45;
 const MAX_FAVICONS = 20;
@@ -110,7 +111,25 @@ export async function refreshDue(db: D1Database, minAgeMs = 10 * 60_000, userId?
     .all<DueFeed>();
 
   const batch = pickBatch(results, 3);
-  for (const feed of batch) await refreshFeed(db, feed, now);
+  const hosts = new Map<string, DueFeed[]>();
+  for (const feed of batch) {
+    let host = "";
+    try {
+      host = new URL(feed.url).hostname.toLowerCase();
+    } catch {
+      host = feed.url;
+    }
+    const group = hosts.get(host) ?? [];
+    group.push(feed);
+    hosts.set(host, group);
+  }
+  const groups = [...hosts.values()];
+  const worker = async (index: number) => {
+    for (; index < groups.length; index += CONCURRENCY) {
+      for (const feed of groups[index]) await refreshFeed(db, feed, now);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, groups.length) }, (_, index) => worker(index)));
   await backfillFavicons(db, Math.min(MAX_FAVICONS, REQUEST_BUDGET - batch.length), userId);
   return batch.length;
 }
