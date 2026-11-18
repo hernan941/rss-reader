@@ -39,6 +39,19 @@ describe("parseFeed", () => {
     expect(f.entries[0].publishedAt).toBe(Date.parse("2026-01-02T00:00:00Z"));
   });
 
+  it("no usa la URL del feed como título ni enlace de una entrada sin título", () => {
+    const xml = `<rss version="2.0"><channel><title>Blog</title><link>https://blog.test/</link>
+      <item><guid>sin-titulo</guid><description>Texto disponible</description></item>
+    </channel></rss>`;
+    const f = parseFeed(xml, "https://blog.test/feed.xml", NOW)!;
+    expect(f.entries[0]).toMatchObject({
+      guid: "sin-titulo",
+      title: "Sin título",
+      link: "",
+      summary: "Texto disponible",
+    });
+  });
+
   it("devuelve null si no es un feed", () => {
     expect(parseFeed("<html><body>hola</body></html>", "https://x.test")).toBeNull();
     expect(parseFeed("no es xml", "https://x.test")).toBeNull();
