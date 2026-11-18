@@ -18,6 +18,7 @@
  *   .input · .select · .label · .field (label + control + .hint)
  *   .badge (contadores) · .alert (.alert-ok | .alert-err) · .card
  *   .dialog (+ .dialog-title/.dialog-desc/.dialog-footer) · .drawer (hoja de vista previa)
+ *   html.navigating (barra de progreso superior; solo aparece tras una navegación iniciada por el usuario, con retardo)
  *   .menu (desplegable) · .row (filas del sidebar) · .entry (filas de artículos) · .prose (texto de la vista previa)
  *
  * Reglas: sin text-decoration en enlaces; sin animaciones al cargar (las transiciones de
@@ -387,3 +388,21 @@ tr.off .tag { text-decoration: none; display: inline-block; }
 @media (hover: none) { .act { opacity: 1; } }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* Navegación pendiente: barra de 2px que solo se ve si la página tarda (>150 ms). Nunca aparece al cargar. */
+html.navigating { cursor: progress; }
+html.navigating::before {
+  content: ""; position: fixed; top: 0; left: 0; height: 2px; width: 0; z-index: 9999;
+  background: var(--primary); opacity: 0; pointer-events: none;
+  animation: nav-progress 8s cubic-bezier(.1, .6, .2, 1) .15s forwards;
+}
+@keyframes nav-progress {
+  0% { opacity: 1; width: 0; }
+  1% { opacity: 1; width: 0; }
+  30% { opacity: 1; width: 60%; }
+  100% { opacity: 1; width: 92%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html.navigating::before { width: 100%; animation: nav-static 0s linear .15s forwards; } /* barra fija, también con retardo */
+  @keyframes nav-static { to { opacity: 1; } }
+}

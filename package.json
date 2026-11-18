@@ -4,11 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "node scripts/assets-version.mjs",
     "dev": "wrangler dev",
+    "predeploy": "node scripts/assets-version.mjs",
     "deploy": "wrangler deploy",
     "db:local": "wrangler d1 migrations apply DB --local",
     "db:remote": "wrangler d1 migrations apply DB --remote",
+    "pretypecheck": "node scripts/assets-version.mjs",
     "typecheck": "tsc --noEmit",
+    "pretest": "node scripts/assets-version.mjs",
     "test": "vitest run"
   },
   "dependencies": {

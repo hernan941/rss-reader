@@ -411,4 +411,24 @@
       case "/": e.preventDefault(); openAddFeed(); break;
     }
   });
+
+  // ---------- Navegación pendiente: barra de progreso (CSS html.navigating) mientras carga la página siguiente ----------
+  const root = document.documentElement;
+  const startNav = () => root.classList.add("navigating");
+  addEventListener("pageshow", () => root.classList.remove("navigating")); // también al volver desde bfcache
+  // IMPORTANTE: este bloque debe quedar al final del script. Los listeners de document corren en orden de registro,
+  // así que solo al ir el último ve e.defaultPrevented de los demás handlers (vista previa, confirmaciones, menús).
+  document.addEventListener("click", (e) => {
+    if (e.defaultPrevented || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+    const a = e.target.closest?.("a[href]");
+    if (!a || a.hasAttribute("download") || (a.target && a.target !== "_self")) return;
+    const url = new URL(a.href, location.href);
+    if (url.origin !== location.origin) return;
+    if (url.pathname === location.pathname && url.search === location.search && url.hash) return; // ancla
+    startNav();
+  });
+  document.addEventListener("submit", (e) => {
+    if (e.defaultPrevented || e.target.method === "dialog" || e.target.getAttribute?.("method") === "dialog") return;
+    startNav();
+  });
 })();

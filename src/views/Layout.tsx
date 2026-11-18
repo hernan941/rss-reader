@@ -1,6 +1,7 @@
 import { raw } from "hono/html";
 import type { Child, FC } from "hono/jsx";
 import type { Sub, View } from "../db";
+import { ASSETS_VERSION } from "../assets-version";
 
 const PATHS: Record<string, string> = {
   menu: "M4 6h16M4 12h16M4 18h16",
@@ -17,7 +18,7 @@ const PATHS: Record<string, string> = {
 };
 
 export const Icon: FC<{ name: keyof typeof PATHS }> = ({ name }) => (
-  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path d={PATHS[name]} />
   </svg>
 );
@@ -30,8 +31,8 @@ export const Head: FC<{ title: string }> = ({ title }) => (
     <meta name="theme-color" content="#1d1f27" />
     <title>{title} · Lector RSS</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="stylesheet" href="/app.css" />
-    <script src="/app.js" defer></script>
+    <link rel="stylesheet" href={`/app.css?v=${ASSETS_VERSION}`} />
+    <script src={`/app.js?v=${ASSETS_VERSION}`} defer></script>
   </head>
 );
 
@@ -46,7 +47,7 @@ const FeedRow: FC<{ f: Sub; activeId?: number }> = ({ f, activeId }) => (
     <a href={`/feed/${f.id}`} title={f.last_error ? `Error: ${f.last_error}` : f.url}>
       <span class="avatar">
         <span class="ph">{f.name.charAt(0).toUpperCase()}</span>
-        {f.favicon_url ? <img class="favicon" src={f.favicon_url} alt="" loading="lazy" /> : null}
+        {f.favicon_url ? <img class="favicon" src={f.favicon_url} alt="" width="18" height="18" decoding="async" /> : null}
       </span>
       <span class="name">{f.name}</span>
       {f.last_error ? <span class="warn" title={f.last_error}>!</span> : null}
