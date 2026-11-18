@@ -7,6 +7,35 @@ export type FetchResult =
   | { status: "not-modified" }
   | { status: "ok"; body: string; etag: string; lastModified: string; finalUrl: string };
 
+export class RateLimitError extends Error {
+  retryAfterMs: number;
+
+  constructor(status: number, retryAfterMs: number) {
+    super(`HTTP ${status}`);
+    this.name = "RateLimitError";
+    this.retryAfterMs = retryAfterMs;
+  }
+}
+
+export function parseRetryAfter(header: string | null, now: number): number {
+  const DEFAULT_MS = 60 * 60_000;
+  const MIN_MS = 15 * 60_000;
+  const MAX_MS = 24 * 60 * 60_000;
+  if (!header) return DEFAULT_MS;
+
+  const value = header.trim();
+  let retryAfterMs = DEFAULT_MS;
+  if (/^\d+$/.test(value)) {
+    retryAfterMs = Number(value) * 1000;
+  } else {
+    const date = Date.parse(value);
+    if (!Number.isNaN(date)) retryAfterMs = date - now;
+  }
+
+  if (!Number.isFinite(retryAfterMs)) return DEFAULT_MS;
+  return Math.min(MAX_MS, Math.max(MIN_MS, retryAfterMs));
+}
+
 /** Lee el cuerpo cortando en el límite: `Content-Length` puede faltar o mentir. */
 async function readLimited(res: Response): Promise<string> {
   if (!res.body) return "";
@@ -31,7 +60,7 @@ export async function fetchText(
   cond: { etag?: string; lastModified?: string } = {},
 ): Promise<FetchResult> {
   const headers: Record<string, string> = {
-    "User-Agent": "rss-dashboard/1.0",
+    "User-Agent": "rss-dashboard/1.0 (+https://reader.hernan941.com)",
     Accept: "application/rss+xml, application/atom+xml, application/xml;q=0.9, text/html;q=0.8, */*;q=0.5",
   };
   if (cond.etag) headers["If-None-Match"] = cond.etag;
@@ -39,6 +68,9 @@ export async function fetchText(
 
   const res = await fetch(url, { headers, signal: AbortSignal.timeout(10_000), redirect: "follow" });
   if (res.status === 304) return { status: "not-modified" };
+  if (res.status === 429 || res.status === 503) {
+    throw new RateLimitError(res.status, parseRetryAfter(res.headers.get("Retry-After"), Date.now()));
+  }
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   if (Number(res.headers.get("content-length") ?? 0) > MAX_BYTES) throw new Error("Respuesta demasiado grande");
 
