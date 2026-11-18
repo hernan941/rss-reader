@@ -54,6 +54,12 @@ Revisa `git diff --stat`: solo deben aparecer archivos del issue. Si tocaste alg
 - En el PR indica qué test falló antes de la implementación y el mensaje o motivo del fallo, copiado de la salida real de `npm test` del primer commit.
 - Si el issue está exento, escribe en el PR "TDD: no aplica (motivo)".
 
+## No romper lo que funciona
+
+- Antes de cambiar una condición, un fallback (`||`, `??`), un `return null` temprano, un filtro o un valor por defecto, lista qué entradas toman hoy ese camino y **conserva su comportamiento** salvo que el issue pida cambiarlo.
+- Cada comportamiento que conserves y no tenga test lleva un test que lo fije (pruebas de caracterización). Pueden ir en el commit `test:` y pasar ya antes del arreglo; dilo en el PR.
+- Si quitas o cambias un fallback, compara antes y después al menos: el caso del issue, el caso con todos los campos presentes y cada caso con exactamente un campo ausente.
+
 ## Convenciones
 
 - **Idioma:** comentarios, textos de interfaz, mensajes de error y documentación en español. Los identificadores de código ya existentes se mantienen.
@@ -97,8 +103,9 @@ Lee el comentario inicial de `public/app.css` antes de tocar la interfaz. Resume
 ## Si el issue es ambiguo
 
 Haz la interpretación mínima razonable, **no amplíes el alcance**, y escribe tus supuestos en la sección "Supuestos" de la descripción del PR. No hagas preguntas ni dejes el trabajo a medias: entrega lo que sí está claro.
+Todo valor, texto, default o comportamiento que el issue no especifica y que tú elegiste (p. ej. un texto de fallback, descartar o conservar un registro, un mensaje de error) es un supuesto y **DEBE** figurar en "Supuestos" junto con la alternativa que descartaste. "Ninguno" solo es válido si cada decisión está dicha literalmente en el issue.
 Si algo del issue es imposible sin tocar un archivo prohibido, entrega el resto y explícalo en el PR.
 
 ## Descripción del PR
 
-Usa la plantilla (`.github/pull_request_template.md`): qué cambia, `Closes #N`, cómo se probó (con el resultado real de typecheck y test), el fallo original del test (o "TDD: no aplica (motivo)"), supuestos y, si toca la UI, qué se ve distinto.
+Usa la plantilla (`.github/pull_request_template.md`): qué cambia, `Closes #N`, cómo se probó (con el resultado real de typecheck y test), el fallo original del test (o "TDD: no aplica (motivo)"), supuestos (con la alternativa descartada), "Comportamiento que cambia para casos fuera del issue" (obligatorio, una línea: qué cambia, o "ninguno, verificado con tests X") y, si toca la UI, qué se ve distinto.

@@ -20,7 +20,12 @@ Closes #
 
 ## Supuestos
 
-<!-- Decisiones que se tomaron donde el issue no era claro. Escribe "Ninguno" si no hubo. -->
+<!-- Todo valor, texto, default o comportamiento que el issue no especifica y elegiste, con la alternativa descartada.
+     "Ninguno" solo si cada decisión está dicha literalmente en el issue. -->
+
+## Comportamiento que cambia para casos fuera del issue
+
+<!-- Una línea: qué cambia, o "Ninguno, verificado con tests X". -->
 
 ## Capturas
 
