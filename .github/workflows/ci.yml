@@ -22,8 +22,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # En PRs hace falta el historial para comparar migraciones con la rama base.
-          fetch-depth: ${{ github.event_name == 'pull_request' && 0 || 1 }}
+          # Historial completo: el check de migraciones compara con la rama base (origin/<base>).
+          # Ojo: no usar `cond && 0 || 1`; en las expresiones de Actions el 0 es falso y siempre da 1.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
