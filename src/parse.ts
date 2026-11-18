@@ -152,12 +152,14 @@ export function findFavicon(html: string, baseUrl: string): string {
 }
 
 function buildEntry(item: Node, base: string, now: number, atom: boolean): ParsedEntry | null {
-  const link = atom ? atomLink(item.link, base) : absolute(text(item.link), base);
+  const rawLink = text(item.link);
+  const link = atom ? atomLink(item.link, base) : rawLink ? absolute(rawLink, base) : "";
   const body = text(item["content:encoded"]) || text(item.content) || text(item.description) || text(item.summary);
   const description = text(item.description) || text(item.summary);
-  const title = stripHtml(text(item.title), 300) || link;
-  const guid = text(item.guid) || text(item.id) || link || title;
-  if (!guid || (!link && !title)) return null;
+  const originalTitle = stripHtml(text(item.title), 300);
+  const title = originalTitle || "Sin título";
+  const guid = text(item.guid) || text(item.id) || link || originalTitle;
+  if (!guid) return null;
 
   const date =
     text(item.pubDate) || text(item.published) || text(item.updated) || text(item["dc:date"]) || text(item.date);
