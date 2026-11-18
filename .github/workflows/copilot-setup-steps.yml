@@ -1,0 +1,37 @@
+# Prepara el entorno del agente de nube de GitHub Copilot antes de que empiece a trabajar.
+# El job DEBE llamarse `copilot-setup-steps`; si no, Copilot lo ignora.
+# Se ejecuta también en push/PR de este archivo y a mano, para validarlo sin gastar créditos.
+name: Copilot Setup Steps
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+permissions:
+  contents: read
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # Genera src/assets-version.ts (ignorado por git) para que typecheck y test funcionen de inmediato.
+      - name: Generar la versión de los assets
+        run: node scripts/assets-version.mjs

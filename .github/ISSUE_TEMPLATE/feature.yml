@@ -1,0 +1,65 @@
+name: Funcionalidad o tarea
+description: Un cambio pequeño y acotado, pensado para que lo resuelva el agente de Copilot.
+title: "[feat] "
+labels: ["feature", "copilot"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Cada issue debe poder resolverse en **un solo PR pequeño** (idealmente menos de 5 archivos).
+        Si necesita más, divídelo. Un issue ambiguo cuesta créditos de agente en iteraciones perdidas.
+  - type: textarea
+    id: contexto
+    attributes:
+      label: Contexto
+      description: Por qué se necesita y qué hay hoy en el código (menciona archivos o funciones concretas).
+    validations:
+      required: true
+  - type: textarea
+    id: que
+    attributes:
+      label: Qué hay que hacer
+      description: Descripción concreta y sin ambigüedad del cambio. Si hay una decisión de diseño, tómala aquí.
+    validations:
+      required: true
+  - type: textarea
+    id: criterios
+    attributes:
+      label: Criterios de aceptación
+      description: Lista de comprobaciones verificables, una por línea, con el formato `- [ ] ...`.
+      value: |
+        - [ ] 
+        - [ ] `npm run typecheck` pasa
+        - [ ] `npm test` pasa
+    validations:
+      required: true
+  - type: textarea
+    id: archivos
+    attributes:
+      label: Archivos probables
+      description: Archivos que probablemente hay que tocar o crear.
+      placeholder: |
+        - src/views/time.ts
+        - test/time.test.ts
+    validations:
+      required: true
+  - type: textarea
+    id: fuera
+    attributes:
+      label: Fuera de alcance
+      description: Lo que el agente NO debe tocar ni "aprovechar para mejorar".
+      placeholder: |
+        - No agregar dependencias
+        - No cambiar migraciones ni wrangler.jsonc
+    validations:
+      required: true
+  - type: textarea
+    id: verificar
+    attributes:
+      label: Cómo verificar
+      description: Comandos y comportamiento esperado para comprobar que está bien hecho.
+      placeholder: |
+        - `npm run typecheck && npm test`
+        - Qué debería verse o devolverse
+    validations:
+      required: true

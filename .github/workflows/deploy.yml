@@ -1,0 +1,47 @@
+# Despliegue a Cloudflare al hacer merge en master (o a mano con "Run workflow").
+#
+# Secretos necesarios (Settings > Secrets and variables > Actions, o en el entorno `production`):
+#   CLOUDFLARE_API_TOKEN   token con permisos "Workers Scripts: Edit" y "D1: Edit"
+#   CLOUDFLARE_ACCOUNT_ID  id de la cuenta de Cloudflare
+# ADMIN_EMAILS (y INVITE_CODE) ya son secretos de Cloudflare; el despliegue no los necesita.
+#
+# MIGRACIONES: este flujo NUNCA las aplica. Si un PR agrega un archivo en migrations/,
+# la persona responsable debe correr `npm run db:remote` ANTES de hacer el merge,
+# para que el código nuevo no arranque contra un esquema viejo.
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Sin cancelar: un despliegue a medias es peor que uno en cola.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+      - name: Desplegar
+        run: npm run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

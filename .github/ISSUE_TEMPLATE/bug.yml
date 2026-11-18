@@ -1,0 +1,79 @@
+name: Error
+description: Algo no funciona como debería. Pensado para que lo resuelva el agente de Copilot.
+title: "[bug] "
+labels: ["bug", "copilot"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Cada issue debe poder resolverse en **un solo PR pequeño**. Un error bien descrito
+        (pasos exactos, esperado vs. actual) ahorra iteraciones del agente.
+  - type: textarea
+    id: contexto
+    attributes:
+      label: Contexto
+      description: Dónde ocurre (página, módulo, función) y qué hay hoy en el código relacionado.
+    validations:
+      required: true
+  - type: textarea
+    id: pasos
+    attributes:
+      label: Pasos para reproducir
+      description: Pasos numerados, o un caso de prueba mínimo (entrada concreta de la función afectada).
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: Comportamiento esperado
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Comportamiento actual
+      description: Lo que ocurre en realidad, con el mensaje de error o la salida si la hay.
+    validations:
+      required: true
+  - type: textarea
+    id: que
+    attributes:
+      label: Qué hay que hacer
+      description: Arreglo propuesto, si lo conoces. Debe incluir un test que falle antes y pase después.
+    validations:
+      required: true
+  - type: textarea
+    id: criterios
+    attributes:
+      label: Criterios de aceptación
+      description: Lista de comprobaciones verificables, una por línea, con el formato `- [ ] ...`.
+      value: |
+        - [ ] Hay un test que reproduce el error y pasa con el arreglo
+        - [ ] `npm run typecheck` pasa
+        - [ ] `npm test` pasa
+    validations:
+      required: true
+  - type: textarea
+    id: archivos
+    attributes:
+      label: Archivos probables
+    validations:
+      required: true
+  - type: textarea
+    id: fuera
+    attributes:
+      label: Fuera de alcance
+      description: Lo que el agente NO debe tocar.
+    validations:
+      required: true
+  - type: textarea
+    id: verificar
+    attributes:
+      label: Cómo verificar
+      placeholder: |
+        - `npm run typecheck && npm test`
+    validations:
+      required: true
