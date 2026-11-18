@@ -23,6 +23,15 @@ body:
     validations:
       required: true
   - type: textarea
+    id: test-primero
+    attributes:
+      label: Test que debe fallar primero
+      description: El test que fallará contra el código actual (archivo, caso y entrada concreta), agregado en un commit `test:` antes de la implementación. Escribe "No aplica" si el cambio es solo de UI/CSS, documentación o solo tests.
+      placeholder: |
+        - test/title.test.ts: pageTitle("Todo", 12) devuelve "(12) Todo · Lector RSS"
+    validations:
+      required: false
+  - type: textarea
     id: criterios
     attributes:
       label: Criterios de aceptación

@@ -41,16 +41,26 @@ No hay linter ni formateador: copia el estilo del archivo que editas (comillas d
 
 ## Obligatorio antes de abrir el PR
 
-Ejecuta `npm run typecheck` y `npm test`. **Los dos deben pasar.** Si fallan, corrígelo antes de abrir el PR. No abras el PR con tests rotos ni los desactives para que pasen.
+Ejecuta `npm run typecheck` y `npm test`. **El estado final (último commit) debe pasar los dos.** Si fallan, corrígelo antes de abrir el PR. No abras el PR con tests rotos ni los desactives para que pasen.
 Revisa `git diff --stat`: solo deben aparecer archivos del issue. Si tocaste algo ajeno, revértelo.
+
+## TDD
+
+- **Errores (bugs):** SIEMPRE test primero. **Funcionalidades con lógica** (parsing, DB, rutas, funciones puras): test primero.
+- **No aplica:** cambios solo de UI/CSS, documentación, e issues cuyo entregable son solo tests.
+- **Verificable con dos commits separados, sin squash:**
+  1. `test:` agrega los tests que **FALLAN** contra el código actual. Debe pasar `npm run typecheck`; solo `npm test` puede fallar, y solo por los tests nuevos.
+  2. `feat:` o `fix:` con la implementación que los hace pasar.
+- En el PR indica qué test falló antes de la implementación y el mensaje o motivo del fallo, copiado de la salida real de `npm test` del primer commit.
+- Si el issue está exento, escribe en el PR "TDD: no aplica (motivo)".
 
 ## Convenciones
 
 - **Idioma:** comentarios, textos de interfaz, mensajes de error y documentación en español. Los identificadores de código ya existentes se mantienen.
-- **Commits:** asunto `feat:`, `fix:`, `test:` o `refactor:` más cuerpo con viñetas. Sin trailers `Co-Authored-By`.
+- **Commits:** asunto `feat:`, `fix:`, `test:` o `refactor:` más cuerpo con viñetas. Sin trailers `Co-Authored-By`. Si aplica TDD, el commit `test:` va antes que el de la implementación y no se aplastan (ver TDD).
 - **Diffs pequeños y enfocados:** solo lo que pide el issue. Sin refactors, renombrados ni "mejoras" aparte.
 - **Sin dependencias nuevas** salvo que el issue lo permita explícitamente.
-- **Tests:** todo cambio de comportamiento lleva test en `test/`. Funciones puras, con entradas concretas. Para D1 usa una base falsa local (ver `fakeDb` en `test/security.test.ts`) y `vi.stubGlobal("fetch", ...)` para la red; nunca red real.
+- **Tests:** todo cambio de comportamiento lleva test en `test/`, escrito antes que la implementación cuando aplica TDD. Funciones puras, con entradas concretas. Para D1 usa una base falsa local (ver `fakeDb` en `test/security.test.ts`) y `vi.stubGlobal("fetch", ...)` para la red; nunca red real.
 - **Sin servidor de desarrollo:** no puedes ejecutar `wrangler dev`. Verifica con typecheck y tests.
 
 ## Sistema de diseño (`public/app.css`)
@@ -91,4 +101,4 @@ Si algo del issue es imposible sin tocar un archivo prohibido, entrega el resto 
 
 ## Descripción del PR
 
-Usa la plantilla (`.github/pull_request_template.md`): qué cambia, `Closes #N`, cómo se probó (con el resultado real de typecheck y test), supuestos y, si toca la UI, qué se ve distinto.
+Usa la plantilla (`.github/pull_request_template.md`): qué cambia, `Closes #N`, cómo se probó (con el resultado real de typecheck y test), el fallo original del test (o "TDD: no aplica (motivo)"), supuestos y, si toca la UI, qué se ve distinto.

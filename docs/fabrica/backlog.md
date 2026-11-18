@@ -279,6 +279,9 @@ Crear `test/discover.test.ts` con `vi.stubGlobal("fetch", ...)` que responda seg
 - `Layout` pasa su `unread` a `Head`. Las demás páginas no cambian.
 - El valor se calcula al cargar la página; no hay que actualizarlo en vivo desde `public/app.js`.
 
+**Test que debe fallar primero**
+`test/title.test.ts` con los tres casos de `pageTitle` (commit `test:`); falla porque `pageTitle` aún no existe en `src/views/Layout.tsx`. Después, el commit `feat:` con la implementación.
+
 **Criterios de aceptación**
 - [ ] `pageTitle("Todo", 12)` devuelve `"(12) Todo · Lector RSS"`
 - [ ] `pageTitle("Todo", 0)` y `pageTitle("Todo")` devuelven `"Todo · Lector RSS"`
@@ -304,6 +307,8 @@ Crear `test/discover.test.ts` con `vi.stubGlobal("fetch", ...)` que responda seg
 ---
 
 ## #8 README: documentar tests, CI y la fábrica
+
+TDD: no aplica (solo documentación).
 
 **Contexto**
 `README.md` dice `npm test  # tests (parser, OPML, contraseñas)`, pero también existen tests de seguridad (`test/security.test.ts`), y ahora el repo tiene integración continua (`.github/workflows/ci.yml`), despliegue automático (`.github/workflows/deploy.yml`) y un proceso de trabajo con el agente de Copilot (`docs/fabrica/README.md`). El árbol de la sección "Estructura" no los menciona.
@@ -346,6 +351,9 @@ Agregar una tercera vista `unread` accesible con `?v=unread`, igual que `?v=star
 - En `Layout.tsx`, un enlace "Sin leer" en la sección de vistas (junto a "Todo" y "Guardados"), con el icono ya existente que mejor encaje (no crear iconos nuevos) y el contador `unread`; marcado como activo cuando `view === "unread"`.
 - En `Timeline.tsx`: título "Sin leer", y un estado vacío "Estás al día" cuando no hay artículos. "Marcar todo leído" se muestra en esta vista igual que en "Todo".
 - Respetar el sistema de diseño de `public/app.css` (solo componentes existentes, sin estilos en línea).
+
+**Test que debe fallar primero**
+Un test nuevo en `test/` (commit `test:`) que comprueba que `parseView("unread")` devuelve `"unread"` (hoy cae en la vista por defecto) y que la SQL de `queryEntries` con `unread` contiene la condición de no leído y de horizonte. Después, el commit `feat:` con la implementación. La parte de UI/CSS (enlace, estado vacío) no lleva TDD.
 
 **Criterios de aceptación**
 - [ ] `GET /?v=unread` muestra solo no leídos recientes; `?v=starred` y `/` no cambian

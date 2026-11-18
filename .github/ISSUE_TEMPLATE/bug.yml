@@ -46,6 +46,15 @@ body:
     validations:
       required: true
   - type: textarea
+    id: test-primero
+    attributes:
+      label: Test que debe fallar primero
+      description: El test que reproduce el error y fallará contra el código actual (archivo, caso y entrada concreta). El agente lo agrega en un commit `test:` antes del arreglo.
+      placeholder: |
+        - test/parse.test.ts: parseFeed con ... debe devolver ...
+    validations:
+      required: true
+  - type: textarea
     id: criterios
     attributes:
       label: Criterios de aceptación

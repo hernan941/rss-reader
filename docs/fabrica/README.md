@@ -11,11 +11,12 @@ issue (plantilla) ──> asignar a Copilot ──> PR del agente ──> CI `ch
 
 1. **Issue.** La persona crea un issue con la plantilla (`feature` o `bug`). Debe ser pequeño y verificable. Los candidatos listados están en [`backlog.md`](backlog.md).
 2. **Asignación.** Se asigna el issue a **Copilot**. El agente lee `.github/copilot-instructions.md`, prepara su entorno con `.github/workflows/copilot-setup-steps.yml`, trabaja en una rama `copilot/...` y abre un PR (borrador).
-3. **Verificación del agente.** Antes de abrir el PR debe haber corrido `npm run typecheck` y `npm test` (lo exigen las instrucciones).
-4. **CI.** `.github/workflows/ci.yml` corre el job `check` (typecheck + test). Los workflows de un PR del agente pueden requerir que un humano pulse "Approve and run workflows".
-5. **Revisión.** La persona lee el diff contra los criterios de aceptación del issue. Cambios pedidos como comentarios en el PR (cada ronda cuesta créditos, ver abajo).
-6. **Merge.** Con `check` verde y 1 aprobación. Si el PR agrega una migración, **aplicarla antes** (`npm run db:remote`).
-7. **Deploy.** `.github/workflows/deploy.yml` corre al hacer push a master: repite typecheck y test y ejecuta `npm run deploy`.
+3. **TDD.** Bugs y funcionalidades con lógica llevan primero un commit `test:` con tests que fallan y después el commit `feat:`/`fix:` que los pasa (sin squash); el PR cita el fallo original. No aplica a UI/CSS, docs ni issues solo de tests ("TDD: no aplica (motivo)"). Detalle en `.github/copilot-instructions.md`.
+4. **Verificación del agente.** Antes de abrir el PR debe haber corrido `npm run typecheck` y `npm test` (lo exigen las instrucciones).
+5. **CI.** `.github/workflows/ci.yml` corre el job `check` (typecheck + test). Los workflows de un PR del agente pueden requerir que un humano pulse "Approve and run workflows".
+6. **Revisión.** La persona lee el diff contra los criterios de aceptación del issue. Cambios pedidos como comentarios en el PR (cada ronda cuesta créditos, ver abajo).
+7. **Merge.** Con `check` verde y 1 aprobación. Si el PR agrega una migración, **aplicarla antes** (`npm run db:remote`).
+8. **Deploy.** `.github/workflows/deploy.yml` corre al hacer push a master: repite typecheck y test y ejecuta `npm run deploy`.
 
 Regla de oro: el agente y la CI **nunca** aplican migraciones remotas. Eso siempre es manual.
 
@@ -65,16 +66,17 @@ Issues del mes posibles ≈ `120 / créditos_por_issue_pequeño`. Recalcular tra
 
 Una fila por issue entregado, en una hoja o en este mismo archivo:
 
-| Issue | Tipo | Créditos | Rondas | CI verde al 1er intento | Mergeado sin código humano | Regresión |
-|---|---|---|---|---|---|---|
-| #0 relTime | test | | | | | |
-| | | | | | | |
+| Issue | Tipo | Créditos | Rondas | CI verde al 1er intento | Mergeado sin código humano | TDD respetado | Regresión |
+|---|---|---|---|---|---|---|---|
+| #0 relTime | test | | | | | | |
+| | | | | | | | |
 
 - **Tipo:** `test`, `feature`, `bug`, `docs`, `dificil`.
 - **Créditos:** consumo medido en github.com/settings/copilot (antes y después).
 - **Rondas:** rondas de corrección pedidas tras el primer PR (0 = aceptado a la primera).
 - **CI verde al 1er intento:** el `check` del primer commit del agente pasó.
 - **Mergeado sin código humano:** nadie escribió código a mano en el PR (los comentarios no cuentan).
+- **TDD respetado:** hay un commit `test:` previo con el fallo citado en el PR, o el PR declara "TDD: no aplica (motivo)" con un motivo válido (sí/no/n.a.).
 - **Regresión:** algo roto en producción atribuible al PR (sí/no, y cuál).
 
 ## Criterio de éxito para pasar a la fase 2
