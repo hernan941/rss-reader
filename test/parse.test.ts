@@ -52,6 +52,18 @@ describe("parseFeed", () => {
     });
   });
 
+  it("usa el título como guid cuando no hay guid ni enlace", () => {
+    const xml = `<rss version="2.0"><channel><title>Blog</title><link>https://blog.test/</link>
+      <item><title>Hola</title><description>x</description></item>
+    </channel></rss>`;
+    const f = parseFeed(xml, "https://blog.test/feed.xml", NOW)!;
+    expect(f.entries[0]).toMatchObject({
+      guid: "Hola",
+      title: "Hola",
+      link: "",
+    });
+  });
+
   it("devuelve null si no es un feed", () => {
     expect(parseFeed("<html><body>hola</body></html>", "https://x.test")).toBeNull();
     expect(parseFeed("no es xml", "https://x.test")).toBeNull();
