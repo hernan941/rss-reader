@@ -61,7 +61,7 @@ describe("pickBatch", () => {
   });
 });
 
-function refreshDb() {
+function refreshDb(due: import("../src/refresh").DueFeed[] = []) {
   let dueSql = "";
   let dueArgs: unknown[] = [];
   const updates: { sql: string; args: unknown[] }[] = [];
@@ -76,7 +76,7 @@ function refreshDb() {
         if (sql.includes("FROM feeds f") && sql.includes("f.retry_after <= ?")) {
           dueSql = sql;
           dueArgs = args;
-          return { results: [] };
+          return { results: due };
         }
         return { results: [] };
       },
@@ -143,5 +143,35 @@ describe("refreshFeed", () => {
     const fake = refreshDb();
     await refreshDue(fake.db, 600_000);
     expect(fake.getDue().sql).toContain("f.retry_after <= ?");
+  });
+
+  it("no solapa hosts iguales y sí descarga hosts distintos en paralelo", async () => {
+    const feeds = [
+      { id: 1, url: "https://a.substack.com/feed", etag: "", last_modified: "" },
+      { id: 2, url: "https://b.com/feed", etag: "", last_modified: "" },
+      { id: 3, url: "https://a.substack.com/rss", etag: "", last_modified: "" },
+      { id: 4, url: "https://b.com/rss", etag: "", last_modified: "" },
+    ];
+    const fake = refreshDb(feeds);
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const hostInFlight = new Map<string, number>();
+    let maxPerHost = 0;
+    vi.stubGlobal("fetch", async (url: string) => {
+      const host = new URL(url).hostname;
+      const hostCount = (hostInFlight.get(host) ?? 0) + 1;
+      hostInFlight.set(host, hostCount);
+      maxPerHost = Math.max(maxPerHost, hostCount);
+      inFlight++;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      hostInFlight.set(host, hostCount - 1);
+      inFlight--;
+      return new Response(null, { status: 304 });
+    });
+
+    expect(await refreshDue(fake.db, 0)).toBe(4);
+    expect(maxPerHost).toBe(1);
+    expect(maxInFlight).toBeGreaterThan(1);
   });
 });
