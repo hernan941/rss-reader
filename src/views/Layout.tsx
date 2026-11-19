@@ -29,7 +29,7 @@ export const Head: FC<{ title: string; theme: Theme }> = ({ title, theme }) => (
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content={theme === "latte" ? "light" : "dark"} />
-    <meta name="theme-color" content="#1d1f27" />
+    <meta name="theme-color" content={theme === "latte" ? "#e6e9ef" : theme === "mocha" ? "#181825" : "#1d1f27"} />
     <title>{title} · Lector RSS</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="stylesheet" href={`/app.css?v=${ASSETS_VERSION}`} />
