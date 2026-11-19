@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import * as time from "../src/views/time";
-
-const updatedLabel = (time as unknown as {
-  updatedLabel: (checkedAt: number[], now?: number) => string;
-}).updatedLabel;
+import { updatedLabel } from "../src/views/time";
 
 const NOW = Date.parse("2026-06-15T12:00:00Z");
 
