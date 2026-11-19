@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getCookie } from "hono/cookie";
+import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { secureHeaders } from "hono/secure-headers";
 import {
   deleteUser, getUserEmail, isAdmin, kickUser, listUsers, registrationState, setDisabled, setMaxUsers,
@@ -21,6 +21,7 @@ import { AdminPage } from "./views/Admin";
 import { AuthPage } from "./views/Auth";
 import { Layout } from "./views/Layout";
 import { EntryList, Timeline } from "./views/Timeline";
+import { parseTheme, type Theme } from "./theme";
 
 type Env = { DB: D1Database; INVITE_CODE?: string; ADMIN_EMAILS?: string };
 type App = { Bindings: Env; Variables: { user: User } };
@@ -33,6 +34,7 @@ const enc = encodeURIComponent;
 
 /** Solo permite volver a rutas internas. */
 const safeBack = (b: unknown): string => (typeof b === "string" && /^\/(?!\/)/.test(b) ? b : "/");
+const pageTheme = (c: any): Theme => parseTheme(getCookie(c, "theme"));
 
 function withParam(path: string, key: string, value: string): string {
   const u = new URL(path, "http://x");
@@ -95,12 +97,12 @@ const closedMessage = (r: Awaited<ReturnType<typeof registrationState>>) =>
 
 app.get("/login", async (c) => {
   if (await currentUser(c, c.env.DB)) return c.redirect("/");
-  return c.html(<AuthPage mode="login" canRegister={(await registrationState(c.env.DB)).open} />);
+  return c.html(<AuthPage mode="login" theme={pageTheme(c)} canRegister={(await registrationState(c.env.DB)).open} />);
 });
 app.get("/register", async (c) => {
   if (await currentUser(c, c.env.DB)) return c.redirect("/");
   const reg = await registrationState(c.env.DB);
-  return c.html(<AuthPage mode="register" needInvite={!!c.env.INVITE_CODE} closed={closedMessage(reg)} />);
+  return c.html(<AuthPage mode="register" theme={pageTheme(c)} needInvite={!!c.env.INVITE_CODE} closed={closedMessage(reg)} />);
 });
 
 app.post("/login", async (c) => {
@@ -109,7 +111,7 @@ app.post("/login", async (c) => {
   const password = String(body.password ?? "");
   const keys = [`login:${email}`, `ip:${ip(c)}`];
   const fail = async (msg: string, status: 200 | 429 = 200) =>
-    c.html(<AuthPage mode="login" err={msg} email={email} canRegister={(await registrationState(c.env.DB)).open} />, status);
+    c.html(<AuthPage mode="login" theme={pageTheme(c)} err={msg} email={email} canRegister={(await registrationState(c.env.DB)).open} />, status);
 
   if ((await isBlocked(c.env.DB, keys[0], 8, 15 * MIN)) || (await isBlocked(c.env.DB, keys[1], 40, 15 * MIN))) {
     return await fail("Demasiados intentos. Espera unos minutos e inténtalo de nuevo.", 429);
@@ -131,10 +133,10 @@ app.post("/register", async (c) => {
   const email = String(body.email ?? "").trim().toLowerCase();
   const password = String(body.password ?? "");
   const needInvite = !!c.env.INVITE_CODE;
-  const fail = (msg: string) => c.html(<AuthPage mode="register" err={msg} email={email} needInvite={needInvite} />);
+  const fail = (msg: string) => c.html(<AuthPage mode="register" theme={pageTheme(c)} err={msg} email={email} needInvite={needInvite} />);
 
   const reg = await registrationState(c.env.DB);
-  if (!reg.open) return c.html(<AuthPage mode="register" needInvite={needInvite} closed={closedMessage(reg)} />, 403);
+  if (!reg.open) return c.html(<AuthPage mode="register" theme={pageTheme(c)} needInvite={needInvite} closed={closedMessage(reg)} />, 403);
 
   // El límite va antes que el código de invitación, para que no se pueda adivinar a fuerza de intentos.
   const key = `reg:${ip(c)}`;
@@ -153,10 +155,25 @@ app.post("/register", async (c) => {
   if (!id) {
     // Puede ser un correo repetido, o que el límite se alcanzara justo ahora.
     const now = await registrationState(c.env.DB);
-    return now.open ? fail("Ya existe una cuenta con ese correo.") : c.html(<AuthPage mode="register" closed={closedMessage(now)} />, 403);
+    return now.open ? fail("Ya existe una cuenta con ese correo.") : c.html(<AuthPage mode="register" theme={pageTheme(c)} closed={closedMessage(now)} />, 403);
   }
   await startSession(c, c.env.DB, id);
   return c.redirect("/");
+});
+
+app.post("/theme", async (c) => {
+  const body = await c.req.parseBody();
+  const theme = parseTheme(typeof body.theme === "string" ? body.theme : undefined);
+  if (theme === "default") {
+    deleteCookie(c, "theme", { path: "/" });
+  } else {
+    setCookie(c, "theme", theme, {
+      path: "/",
+      maxAge: 365 * 24 * 60 * 60,
+      sameSite: "Lax",
+    });
+  }
+  return c.redirect(safeBack(body.back));
 });
 
 // ---------- Todo lo demás exige sesión ----------
@@ -202,7 +219,7 @@ async function renderTimeline(c: any, scope: { feedId?: number; folder?: string 
     if (Array.isArray(parsed)) closedFolders = parsed.filter((x) => typeof x === "string").slice(0, 200);
   } catch {}
   return c.html(
-    <Layout closedFolders={closedFolders} user={user} admin={isAdmin(user.email, c.env)} subs={subs} folders={folders} starred={starred} view={view} feedId={scope.feedId} folder={scope.folder} title={heading} msg={c.req.query("msg")} err={c.req.query("err")}>
+    <Layout theme={pageTheme(c)} closedFolders={closedFolders} user={user} admin={isAdmin(user.email, c.env)} subs={subs} folders={folders} starred={starred} view={view} feedId={scope.feedId} folder={scope.folder} title={heading} msg={c.req.query("msg")} err={c.req.query("err")}>
       <Timeline view={view} heading={heading} feed={feed} folder={scope.folder} hasFeeds={subs.length > 0} emptyFolder={scope.folder !== undefined && !folderHasFeeds} entries={page.entries} next={page.next} base={base} />
     </Layout>,
   );
@@ -331,7 +348,7 @@ adminApp.use("*", async (c, next) => (isAdmin(c.get("user").email, c.env) ? next
 adminApp.get("/", async (c) => {
   const [users, reg, stats] = await Promise.all([listUsers(c.env.DB), registrationState(c.env.DB), siteStats(c.env.DB)]);
   const admins = (c.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
-  return c.html(<AdminPage me={c.get("user")} users={users} admins={admins} reg={reg} stats={stats} msg={c.req.query("msg")} err={c.req.query("err")} />);
+  return c.html(<AdminPage me={c.get("user")} theme={pageTheme(c)} users={users} admins={admins} reg={reg} stats={stats} msg={c.req.query("msg")} err={c.req.query("err")} />);
 });
 
 const back = (c: any, key: "msg" | "err", text: string) => c.redirect(`/admin?${key}=${enc(text)}`);

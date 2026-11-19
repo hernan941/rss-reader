@@ -2,6 +2,7 @@ import { raw } from "hono/html";
 import type { Child, FC } from "hono/jsx";
 import type { Sub, View } from "../db";
 import { ASSETS_VERSION } from "../assets-version";
+import type { Theme } from "../theme";
 
 const PATHS: Record<string, string> = {
   menu: "M4 6h16M4 12h16M4 18h16",
@@ -23,11 +24,11 @@ export const Icon: FC<{ name: keyof typeof PATHS }> = ({ name }) => (
   </svg>
 );
 
-export const Head: FC<{ title: string }> = ({ title }) => (
+export const Head: FC<{ title: string; theme: Theme }> = ({ title, theme }) => (
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content={theme === "latte" ? "light" : "dark"} />
     <meta name="theme-color" content="#1d1f27" />
     <title>{title} · Lector RSS</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -61,6 +62,7 @@ const FeedRow: FC<{ f: Sub; activeId?: number }> = ({ f, activeId }) => (
 
 interface Props {
   user: { email: string };
+  theme: Theme;
   admin?: boolean;
   subs: Sub[];
   folders: string[];
@@ -75,7 +77,7 @@ interface Props {
   children?: Child;
 }
 
-export const Layout: FC<Props> = ({ user, admin, subs, folders: folderNames, starred, view, feedId, folder, title, msg, err, closedFolders = [], children }) => {
+export const Layout: FC<Props> = ({ user, theme, admin, subs, folders: folderNames, starred, view, feedId, folder, title, msg, err, closedFolders = [], children }) => {
   const unread = subs.reduce((n, f) => n + f.unread, 0);
   const names = new Set(folderNames);
   for (const f of subs) if (f.folder) names.add(f.folder);
@@ -88,8 +90,8 @@ export const Layout: FC<Props> = ({ user, admin, subs, folders: folderNames, sta
   return (
     <>
       {raw("<!DOCTYPE html>")}
-      <html lang="es">
-        <Head title={title} />
+      <html lang="es" data-theme={theme === "default" ? undefined : theme}>
+        <Head title={title} theme={theme} />
         <body>
           <header class="topbar">
             <button class="btn btn-ghost btn-icon" id="menu" type="button" aria-label="Menú"><Icon name="menu" /></button>

@@ -1,7 +1,7 @@
 /*
  * Sistema de diseño (inspirado en shadcn/ui "new-york": neutro, discreto, bordes de 1px).
  *
- * TOKENS (tema oscuro único, paleta de hernan941.com)
+ * TOKENS (por defecto: paleta oscura de hernan941.com; temas disponibles: por defecto, Catppuccin Latte, Catppuccin Mocha)
  *   Superficies: --background (contenido) · --sidebar / --popover · --muted (superficie sutil, inputs de badges)
  *                --accent (hover) · --border / --input
  *   Texto:       --foreground · --foreground-strong (títulos) · --muted-foreground
@@ -51,6 +51,54 @@
   --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --mono: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace;
   --side-w: 264px;
+  color-scheme: dark;
+}
+
+:root[data-theme="latte"] {
+  --background: #eff1f5;
+  --sidebar: #e6e9ef;
+  --popover: #e6e9ef;
+  --foreground: #4c4f69;
+  --foreground-strong: #4c4f69;
+  --muted: #ccd0da;
+  --muted-foreground: #6c6f85;
+  --accent: #ccd0da;
+  --accent-foreground: #4c4f69;
+  --primary: #1e66f5;
+  --primary-foreground: #eff1f5;
+  --primary-soft: color-mix(in srgb, #1e66f5 15%, #eff1f5);
+  --action: #40a02b;
+  --action-foreground: #eff1f5;
+  --border: #bcc0cc;
+  --input: #bcc0cc;
+  --ring: #7287fd;
+  --destructive: #d20f39;
+  --star: #df8e1d;
+  --success: #40a02b;
+  color-scheme: light;
+}
+
+:root[data-theme="mocha"] {
+  --background: #1e1e2e;
+  --sidebar: #181825;
+  --popover: #181825;
+  --foreground: #cdd6f4;
+  --foreground-strong: #cdd6f4;
+  --muted: #313244;
+  --muted-foreground: #a6adc8;
+  --accent: #313244;
+  --accent-foreground: #cdd6f4;
+  --primary: #89b4fa;
+  --primary-foreground: #1e1e2e;
+  --primary-soft: color-mix(in srgb, #89b4fa 15%, #1e1e2e);
+  --action: #a6e3a1;
+  --action-foreground: #1e1e2e;
+  --border: #45475a;
+  --input: #45475a;
+  --ring: #b4befe;
+  --destructive: #f38ba8;
+  --star: #f9e2af;
+  --success: #a6e3a1;
   color-scheme: dark;
 }
 
