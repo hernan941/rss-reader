@@ -289,6 +289,15 @@
       ["Exportar OPML", exportOpml],
       ...(d.admin ? [["Administración", () => { location.href = "/admin"; }]] : []),
       null,
+      ...[
+        ["Tema por defecto", "default"],
+        ["Catppuccin Latte", "latte"],
+        ["Catppuccin Mocha", "mocha"],
+      ].map(([label, theme]) => [
+        `${document.documentElement.dataset.theme === theme || (!document.documentElement.dataset.theme && theme === "default") ? "✓ " : ""}${label}`,
+        () => postForm("/theme", { theme, back: here() }),
+      ]),
+      null,
       ["Cerrar sesión", () => postForm("/logout")],
     ],
     feed: (d) => [

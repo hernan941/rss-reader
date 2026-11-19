@@ -3,11 +3,13 @@ import type { FC } from "hono/jsx";
 import type { AdminUser, RegistrationState } from "../admin";
 import { Head } from "./Layout";
 import { relTime } from "./time";
+import type { Theme } from "../theme";
 
 const ONLINE_MS = 10 * 60_000;
 
 interface Props {
   me: { id: number; email: string };
+  theme: Theme;
   users: AdminUser[];
   admins: string[];
   reg: RegistrationState;
@@ -23,7 +25,7 @@ const regLabel = (r: RegistrationState) =>
       ? `Cerrado automáticamente · se alcanzó el límite de ${r.max} usuarios`
       : "Cerrado manualmente";
 
-export const AdminPage: FC<Props> = ({ me, users, admins, reg, stats, msg, err }) => {
+export const AdminPage: FC<Props> = ({ me, theme, users, admins, reg, stats, msg, err }) => {
   const now = Date.now();
   const online = users.filter((u) => u.sessions > 0 && now - u.last_seen_at < ONLINE_MS).length;
   const isAdminEmail = (e: string) => admins.includes(e.toLowerCase());
@@ -31,8 +33,8 @@ export const AdminPage: FC<Props> = ({ me, users, admins, reg, stats, msg, err }
   return (
     <>
       {raw("<!DOCTYPE html>")}
-      <html lang="es">
-        <Head title="Administración" />
+      <html lang="es" data-theme={theme === "default" ? undefined : theme}>
+        <Head title="Administración" theme={theme} />
         <body class="admin-body">
           <main class="admin">
             <header class="admin-head">

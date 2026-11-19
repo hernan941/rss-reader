@@ -1,9 +1,11 @@
 import { raw } from "hono/html";
 import type { FC } from "hono/jsx";
 import { Head } from "./Layout";
+import type { Theme } from "../theme";
 
 interface Props {
   mode: "login" | "register";
+  theme: Theme;
   err?: string;
   email?: string;
   needInvite?: boolean;
@@ -13,13 +15,13 @@ interface Props {
   canRegister?: boolean;
 }
 
-export const AuthPage: FC<Props> = ({ mode, err, email, needInvite, closed, canRegister = true }) => {
+export const AuthPage: FC<Props> = ({ mode, theme, err, email, needInvite, closed, canRegister = true }) => {
   const login = mode === "login";
   return (
     <>
       {raw("<!DOCTYPE html>")}
-      <html lang="es">
-        <Head title={login ? "Entrar" : "Crear cuenta"} />
+      <html lang="es" data-theme={theme === "default" ? undefined : theme}>
+        <Head title={login ? "Entrar" : "Crear cuenta"} theme={theme} />
         <body class="auth-body">
           <main class="auth">
             <a href="/login" class="brand"><h1><span class="prompt">$</span> echo "reader"<span class="cursor">_</span></h1></a>
