@@ -22,6 +22,7 @@ import { AuthPage } from "./views/Auth";
 import { Layout } from "./views/Layout";
 import { EntryList, Timeline } from "./views/Timeline";
 import { parseTheme, type Theme } from "./theme";
+import { updatedLabel } from "./views/time";
 
 type Env = { DB: D1Database; INVITE_CODE?: string; ADMIN_EMAILS?: string };
 type App = { Bindings: Env; Variables: { user: User } };
@@ -213,6 +214,9 @@ async function renderTimeline(c: any, scope: { feedId?: number; folder?: string 
   }
 
   const heading = feed ? feed.name : scope.folder !== undefined ? scope.folder : view === "starred" ? "Guardados" : "Todo";
+  const updatedSubs = scope.feedId ? (feed ? [feed] : []) : scope.folder !== undefined ? subs.filter((s) => s.folder === scope.folder) : subs;
+  const scopeHasFeeds = scope.feedId ? !!feed : scope.folder !== undefined ? folderHasFeeds : subs.length > 0;
+  const updated = updatedLabel(updatedSubs.map((s) => s.last_checked_at));
   let closedFolders: string[] = [];
   try {
     const parsed = JSON.parse(getCookie(c, "folders_closed") ?? "[]"); // Hono ya decodifica el valor una vez
@@ -220,7 +224,7 @@ async function renderTimeline(c: any, scope: { feedId?: number; folder?: string 
   } catch {}
   return c.html(
     <Layout theme={pageTheme(c)} closedFolders={closedFolders} user={user} admin={isAdmin(user.email, c.env)} subs={subs} folders={folders} starred={starred} view={view} feedId={scope.feedId} folder={scope.folder} title={heading} msg={c.req.query("msg")} err={c.req.query("err")}>
-      <Timeline view={view} heading={heading} feed={feed} folder={scope.folder} hasFeeds={subs.length > 0} emptyFolder={scope.folder !== undefined && !folderHasFeeds} entries={page.entries} next={page.next} base={base} />
+      <Timeline view={view} heading={heading} feed={feed} folder={scope.folder} hasFeeds={scopeHasFeeds} emptyFolder={scope.folder !== undefined && !folderHasFeeds} entries={page.entries} next={page.next} base={base} updated={updated} />
     </Layout>,
   );
 }

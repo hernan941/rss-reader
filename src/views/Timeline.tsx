@@ -43,9 +43,10 @@ interface Props {
   entries: Entry[];
   next: string | null;
   base: string; // "/", "/feed/3" o "/folder/Tech"
+  updated: string;
 }
 
-export const Timeline: FC<Props> = ({ view, heading, feed, folder, hasFeeds, emptyFolder, entries, next, base }) => {
+export const Timeline: FC<Props> = ({ view, heading, feed, folder, hasFeeds, emptyFolder, entries, next, base, updated }) => {
   const here = view === "starred" ? `${base}?v=starred` : base;
   const hidden = (
     <>
@@ -65,6 +66,7 @@ export const Timeline: FC<Props> = ({ view, heading, feed, folder, hasFeeds, emp
               {new URL(feed.site_url || feed.url).hostname}
             </a>
           ) : null}
+          {hasFeeds ? <span class="sub muted">{updated}</span> : null}
         </div>
         <div class="tools">
           <form method="post" action="/refresh" data-busy="Actualizando…">
