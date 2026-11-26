@@ -4,3 +4,4 @@ node_modules/
 dist/
 *.log
 src/assets-version.ts
+.claude/settings.local.json

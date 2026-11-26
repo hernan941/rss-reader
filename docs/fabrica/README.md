@@ -55,6 +55,17 @@ Issues del mes posibles ≈ `120 / créditos_por_issue_pequeño`. Recalcular tra
 
 **Primera medición (issue #1, bug pequeño):** 2 créditos el primer intento y 1 por ronda de corrección. A ese ritmo el presupuesto no es el límite (~60 issues pequeños con una ronda cada uno); el cuello de botella es el tiempo de revisión humana.
 
+**Segunda medición (issue #3, bug grande con migración):** 3 créditos en total con una ronda, casi lo mismo que el pequeño. El tamaño del issue apenas cambia el costo.
+
+**Patrones tras 2 PRs:**
+- TDD respetado siempre (`test:` fallando → `fix:`), también en las rondas.
+- Resuelve lo pedido, pero simplifica de más alrededor (un fallback borrado, el paralelismo eliminado): la revisión humana lo detectó las dos veces, y una ronda bastó para corregirlo.
+- Nunca reescribe la descripción del PR en las rondas ni declara supuestos, aunque se le pida. Hay que leer el diff, no confiar en la descripción.
+
+**Tercera medición (issues #5 y #6, dos features en paralelo):** ambas a la primera, sin rondas y con supuestos declarados. Lo que cambió respecto a #1 y #3: el issue daba los valores exactos (casos del test, tabla de colores) y lo que no debía cambiar. Asignarlas en paralelo costó un conflicto en `src/index.tsx`, resuelto a mano.
+
+**Avisos del agente:** al terminar, Copilot deja el PR en borrador y no pide revisión; la señal fiable es el evento `copilot_work_finished` en la línea de tiempo del PR. Copilot Student no tiene selector de razonamiento (nov. 2026).
+
 **Reglas para no desperdiciar créditos:**
 
 - Un issue = un PR pequeño. Si necesita más de ~5 archivos, dividirlo.
@@ -71,6 +82,9 @@ Una fila por issue entregado, en una hoja o en este mismo archivo:
 | Issue | Tipo | Claridad | Créditos | Rondas | CI verde al 1er intento | Mergeado sin código humano | TDD respetado | Supuestos documentados | Regresión en revisión | Regresión en producción |
 |---|---|---|---|---|---|---|---|---|---|---|
 | #1 URL del feed como título (PR #2) | bug | 50 % | 3 (2 + 1 ronda) | 1 | sí | sí | sí (2 de 2) | no (dejó "Ninguno" aun pidiéndoselo) | sí: descartaba entradas solo con título; corregida en ronda 1 | |
+| #3 Substack 429 (PR #4) | bug (grande: 4 archivos + migración) | 100 % | 3 (incluye 1 ronda) | 1 | n. a. (falló por un error del `ci.yml`, no del PR) | sí | sí (2 de 2) | no (descripción desactualizada tras la ronda) | sí: eliminaba todo el paralelismo; corregida en ronda 1 | |
+| #5 "Actualizado hace X" (PR #7) | feature (4 archivos) | 100 % | ? | 0 | sí | sí | sí (2 de 2) | sí (ubicación y clase CSS) | no | |
+| #6 Temas Catppuccin (PR #8) | feature (8 archivos) | 100 % | ? | 0 | sí | no (1 línea a mano: `theme-color`; conflicto con #7 resuelto a mano) | sí (2 de 2) | sí (marca del tema activo) | no | |
 | #0 relTime | test | 100 % | | | | | | | | |
 
 - **Tipo:** `test`, `feature`, `bug`, `docs`, `dificil`.
