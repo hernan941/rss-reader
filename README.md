@@ -5,19 +5,9 @@ A simple, multi-user RSS reader. Each person creates an account, pastes the addr
 It runs on Cloudflare, usually within the free plan:
 **Workers** (pages + API) · **D1** (SQLite) · **Cron Triggers** (refreshes every 15 min) · **Hono** + TypeScript.
 
-## Screenshots
-
-**Timeline:** one row per article, with sources grouped in folders in the sidebar.
+## Screenshot
 
 ![Timeline](docs/screenshots/timeline.png)
-
-**Preview:** clicking an article opens a panel with its summary.
-
-![Article preview](docs/screenshots/preview.png)
-
-**Mobile:**
-
-<img src="docs/screenshots/mobile.png" alt="Mobile view" width="320">
 
 ## Features
 
