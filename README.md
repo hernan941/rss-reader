@@ -1,114 +1,132 @@
-# Lector RSS
+# RSS Reader
 
-Un lector RSS simple y multiusuario. Cada persona crea su cuenta, pega la dirección de un blog (o de su feed) y los artículos van apareciendo y quedando guardados.
+A simple, multi-user RSS reader. Each person creates an account, pastes the address of a blog (or its feed), and the articles start showing up and stay saved.
 
-Corre en Cloudflare, normalmente dentro del plan gratuito:
-**Workers** (páginas + API) · **D1** (SQLite) · **Cron Triggers** (actualiza cada 15 min) · **Hono** + TypeScript.
+It runs on Cloudflare, usually within the free plan:
+**Workers** (pages + API) · **D1** (SQLite) · **Cron Triggers** (refreshes every 15 min) · **Hono** + TypeScript.
 
-## Qué hace
+## Screenshots
 
-- **Cuentas:** registro e inicio de sesión con correo y contraseña.
-- **Panel `/admin`:** ver usuarios y quién está en línea, expulsarlos, suspenderlos o eliminarlos, y abrir/cerrar el registro (o ponerle un límite de usuarios).
-- **Agregar fuentes:** botón **+** junto a "Fuentes" (elige Fuente o Carpeta, se abre un modal) y **+** en cada carpeta para agregar una fuente directamente ahí. Pega la URL de un sitio o de un feed; detecta el feed automáticamente.
-- **Lista densa** (una fila por artículo) con lo último de todas tus fuentes: *Todo / Guardados*.
-- **Barra lateral con acciones:** el botón `⋯` de cada fuente y carpeta (y de la cabecera) abre un menú: marcar como leído, renombrar, mover a carpeta, dejar de seguir.
-- **Favicons** en la barra lateral: se guarda solo el enlace, no la imagen; si falla, se muestra la inicial.
-- **Carpetas** para agrupar fuentes: créalas con el botón **+** junto a "Fuentes", y elimínalas desde su menú `⋯` sin perder las fuentes.
-- **Vista previa:** al hacer clic en un artículo se abre un panel con su resumen, para decidir si leerlo completo. Ctrl/Cmd+clic abre el original directamente.
-- **Guardar** artículos con la estrella; **marcar leído** al abrirlos (o a mano).
-- **Importar / exportar OPML** (con carpetas), para traer tus feeds desde Feedly.
-- Atajos: `j`/`k` moverse · `o` vista previa · `v` abrir original · `s` guardar · `m` leído/no leído · `/` agregar fuente.
-- Tema oscuro con los colores, la tipografía y el aire de terminal de [hernan941.com](https://hernan941.com/), sin animaciones de parpadeo, y diseño adaptado a móvil.
+**Timeline:** one row per article, with sources grouped in folders in the sidebar.
 
-## Desarrollo local
+![Timeline](docs/screenshots/timeline.png)
+
+**Preview:** clicking an article opens a panel with its summary.
+
+![Article preview](docs/screenshots/preview.png)
+
+**Mobile:**
+
+<img src="docs/screenshots/mobile.png" alt="Mobile view" width="320">
+
+## Features
+
+- **Accounts:** sign up and log in with email and password.
+- **`/admin` panel:** see users and who is online, kick, suspend or delete them, and open/close sign-ups (or set a user limit).
+- **Add sources:** the **+** button next to "Fuentes" (choose Source or Folder, a modal opens) and a **+** on each folder to add a source directly into it. Paste the URL of a site or a feed; the feed is detected automatically.
+- **Dense list** (one row per article) with the latest from all your sources: *All / Saved*.
+- **Sidebar actions:** the `⋯` button on each source and folder (and on the header) opens a menu: mark as read, rename, move to folder, unfollow.
+- **Favicons** in the sidebar: only the link is stored, not the image; if it fails, the initial is shown.
+- **Folders** to group sources: create them with the **+** button next to "Fuentes", and delete them from their `⋯` menu without losing the sources.
+- **Preview:** clicking an article opens a panel with its summary, so you can decide whether to read it in full. Ctrl/Cmd+click opens the original directly.
+- **Save** articles with the star; **mark as read** when opening them (or manually).
+- **OPML import / export** (with folders), to bring your feeds over from Feedly.
+- Shortcuts: `j`/`k` move · `o` preview · `v` open original · `s` save · `m` read/unread · `/` add source.
+- Dark theme with the colors, typography and terminal feel of [hernan941.com](https://hernan941.com/), no blinking animations, and a mobile-friendly layout.
+- **Themes:** besides the default, Catppuccin Latte (light) and Mocha (dark); the choice is kept in a cookie.
+
+The interface is in Spanish.
+
+## Local development
 
 ```bash
 npm install
-npm run db:local     # crea las tablas en la base local
+npm run db:local     # creates the tables in the local database
 npm run dev          # http://localhost:8787
-npm test             # tests (parser, OPML, contraseñas)
+npm test             # tests (parser, OPML, passwords)
 npm run typecheck
 ```
 
-## Publicar en Cloudflare
+## Deploying to Cloudflare
 
 ```bash
 npx wrangler login
-npx wrangler d1 create rss-dashboard      # copia el database_id a wrangler.jsonc
-npm run db:remote                         # aplica las migraciones
+npx wrangler d1 create rss-dashboard      # copy the database_id into wrangler.jsonc
+npm run db:remote                         # applies the migrations
 npm run deploy
 ```
 
-Tras esta configuración inicial, cada merge a `master` aplica las migraciones nuevas y despliega solo mediante
-GitHub Actions (`.github/workflows/deploy.yml`); no hace falta correr `db:remote` ni `deploy` a mano.
+After this initial setup, every merge to `master` applies new migrations and deploys automatically through
+GitHub Actions (`.github/workflows/deploy.yml`); there is no need to run `db:remote` or `deploy` by hand.
 
-### Administradores
+### Administrators
 
-El acceso a `/admin` lo da la variable `ADMIN_EMAILS` (correos separados por comas). Sin ella **nadie** es admin
-y el panel responde 404. Se define a propósito en la configuración y no como "el primero que se registra",
-para que nadie pueda adelantarse a ti en un despliegue público.
+Access to `/admin` is granted by the `ADMIN_EMAILS` variable (comma-separated emails). Without it **nobody** is an
+admin and the panel returns 404. It is set in the configuration on purpose, rather than "whoever signs up first",
+so that nobody can get ahead of you on a public deployment.
 
 ```bash
-npx wrangler secret put ADMIN_EMAILS      # p. ej. tu@correo.com
+npx wrangler secret put ADMIN_EMAILS      # e.g. you@example.com
 ```
 
-En local: copia `.dev.vars.example` a `.dev.vars`, pon tu correo y reinicia `npm run dev`. La cuenta debe existir
-(regístrate primero); el enlace **Admin** aparece entonces en el pie de la barra lateral.
+Locally: copy `.dev.vars.example` to `.dev.vars`, put your email in it and restart `npm run dev`. The account must
+exist (sign up first); the **Admin** link then appears at the bottom of the sidebar.
 
-Desde el panel:
+From the panel:
 
-| Acción | Efecto |
+| Action | Effect |
 |---|---|
-| **Expulsar** | Cierra todas sus sesiones. Puede volver a entrar. |
-| **Suspender / Reactivar** | Cierra sus sesiones e impide que entre hasta reactivarlo. |
-| **Eliminar** | Borra la cuenta y todos sus datos (suscripciones, estado de lectura, guardados). Pide confirmación. |
-| **Cerrar / abrir registro** | Interruptor manual. |
-| **Límite de usuarios** | El registro se cierra solo al alcanzarlo (0 = sin límite). |
+| **Kick** | Ends all of their sessions. They can log in again. |
+| **Suspend / Reactivate** | Ends their sessions and blocks login until reactivated. |
+| **Delete** | Deletes the account and all its data (subscriptions, read state, saved items). Asks for confirmation. |
+| **Close / open sign-ups** | Manual switch. |
+| **User limit** | Sign-ups close automatically once it is reached (0 = no limit). |
 
-Los administradores no pueden expulsarse, suspenderse ni eliminarse entre sí desde el panel. Para quitar a
-alguien como admin, sácalo de `ADMIN_EMAILS`.
+Administrators cannot kick, suspend or delete each other from the panel. To remove someone as admin, take them
+out of `ADMIN_EMAILS`.
 
-### Registro con invitación (opcional)
+### Invite-only sign-up (optional)
 
-Además del interruptor, puedes exigir un código para registrarse:
+Besides the switch, you can require a code to sign up:
 
 ```bash
 npx wrangler secret put INVITE_CODE
 ```
 
-## Cómo funciona (y sus límites)
+## How it works (and its limits)
 
-- **Los feeds se comparten:** si 50 personas siguen el mismo blog, se descarga una sola vez. Cada persona tiene
-  sus propias suscripciones, nombres, carpetas, y estado de leído/guardado.
-- **Cron:** cada 15 min revisa los feeds menos recientes (solo los que tienen suscriptores), en lotes de 40 para
-  respetar el límite de peticiones salientes del plan gratuito. Usa `ETag`/`Last-Modified`.
-- **El estado de leído cubre los últimos 14 días:** lo más antiguo cuenta como leído (y no suma a los contadores). Mantiene las consultas baratas (D1 cobra por filas leídas). Los guardados no caducan.
-- **Tope de 300 fuentes por usuario** (`MAX_FEEDS_PER_USER` en `src/db.ts`).
+- **Feeds are shared:** if 50 people follow the same blog, it is downloaded only once. Each person has their own
+  subscriptions, names, folders, and read/saved state.
+- **Cron:** every 15 min it checks the least recently updated feeds (only those with subscribers), in batches of 40
+  to respect the free plan's outbound request limit. It uses `ETag`/`Last-Modified`.
+- **Read state covers the last 14 days:** anything older counts as read (and does not add to the counters). This keeps queries cheap (D1 bills by rows read). Saved items do not expire.
+- **Limit of 300 sources per user** (`MAX_FEEDS_PER_USER` in `src/db.ts`).
 
-## Seguridad
+## Security
 
-- Contraseñas con PBKDF2-SHA256 (100 000 iteraciones, el máximo que permite Workers) y sal propia.
-- Sesión en cookie `HttpOnly`, `SameSite=Lax` (y `Secure` en HTTPS); en la base solo se guarda el hash del token.
-- Límite de intentos: 8 fallos de login por correo / 40 por IP cada 15 min; 5 registros por IP por hora.
-- Los formularios rechazan peticiones de otro origen (defensa CSRF extra).
-- **No hay verificación de correo ni recuperación de contraseña** (no hay servicio de correo configurado).
-  Si alguien olvida su contraseña, hay que cambiarla a mano en la base de datos.
-- Si el plan gratuito de Workers corta el login por el límite de CPU (10 ms), la solución es el plan de pago
-  de Workers (unos 5 USD/mes) o bajar `PBKDF2_ITERATIONS` en `src/auth.ts` (a costa de seguridad).
+- Passwords with PBKDF2-SHA256 (100,000 iterations, the maximum Workers allows) and a per-user salt.
+- Session in an `HttpOnly`, `SameSite=Lax` cookie (and `Secure` over HTTPS); only the token hash is stored in the database.
+- Rate limiting: 8 failed logins per email / 40 per IP every 15 min; 5 sign-ups per IP per hour.
+- Forms reject cross-origin requests (extra CSRF defense).
+- **There is no email verification or password recovery** (no email service is configured).
+  If someone forgets their password, it has to be changed by hand in the database.
+- If the Workers free plan cuts off login because of the CPU limit (10 ms), the fix is the paid Workers plan
+  (about 5 USD/month) or lowering `PBKDF2_ITERATIONS` in `src/auth.ts` (at the cost of security).
 
-## Estructura
+## Structure
 
 ```
-src/index.tsx      rutas (Hono), sesión y cron
-src/auth.ts        contraseñas, sesiones, límite de intentos
-src/admin.ts       ajustes de la instancia y gestión de usuarios
-src/db.ts          consultas a D1 (todas acotadas por usuario)
-src/parse.ts       RSS / Atom / RDF → entradas
-src/fetch.ts       descarga condicional y detección de feeds
-src/refresh.ts     actualización por lotes
-src/opml.ts        importar / exportar
-src/views/         páginas (JSX del servidor)
-public/            app.css y app.js
-migrations/        esquema de D1
-test/              pruebas (vitest)
+src/index.tsx      routes (Hono), session and cron
+src/auth.ts        passwords, sessions, rate limiting
+src/admin.ts       instance settings and user management
+src/db.ts          D1 queries (all scoped per user)
+src/parse.ts       RSS / Atom / RDF -> entries
+src/fetch.ts       conditional fetching and feed discovery
+src/refresh.ts     batched refresh
+src/opml.ts        import / export
+src/views/         pages (server-side JSX)
+public/            app.css and app.js
+migrations/        D1 schema
+test/              tests (vitest)
+docs/screenshots/  README images
 ```
